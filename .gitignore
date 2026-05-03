@@ -1,0 +1,62 @@
+# IDEs and Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# C++ compilation artifacts
+*.o
+*.obj
+*.a
+*.lib
+*.so
+*.dylib
+*.dll
+*.exe
+*.out
+*.app
+
+# Build directories
+build/
+Debug/
+Release/
+bin/
+*.sln
+*.vcxproj
+*.vcxproj.user
+*.vcxproj.filters
+
+# CMake
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+
+# Node/npm (if using npm in frontend)
+node_modules/
+package-lock.json
+npm-debug.log
+yarn-error.log
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+env/
+venv/
+
+# OS files
+.DS_Store
+Thumbs.db
+*.lnk
+
+# Temporary files
+*.tmp
+*.bak
+*.log
+.env
+
+# System files
+.AppleDouble
+.LSOverride
