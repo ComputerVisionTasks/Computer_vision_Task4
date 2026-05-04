@@ -4,7 +4,7 @@ import os
 from pathlib import Path
 import pickle
 import warnings
-
+import base64
 import cv2
 import numpy as np
 from flask import Flask, jsonify, request, send_from_directory
@@ -222,6 +222,173 @@ def health() -> object:
         }
     )
 
+@app.route('/api/detect', methods=['POST'])
+def detect_faces():
+    """Detect faces in an uploaded image using Haar cascade."""
+    image = _load_image_from_request()
+    if image is None:
+        return jsonify({'success': False, 'error': 'No image provided'}), 400
 
+    try:
+        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        # Load the pre-trained Haar cascade classifier
+        cascade_path = cv2.data.haarcascades + 'haarcascade_frontalface_default.xml'
+        face_cascade = cv2.CascadeClassifier(cascade_path)
+
+        faces = face_cascade.detectMultiScale(
+            gray,
+            scaleFactor=1.1,
+            minNeighbors=5,
+            minSize=(30, 30)
+        )
+
+        # Draw rectangles on a copy of the original image
+        result_img = image.copy()
+        for (x, y, w, h) in faces:
+            cv2.rectangle(result_img, (x, y), (x + w, y + h), (65, 84, 241), 5)
+
+        # Encode result image to base64
+        _, buffer = cv2.imencode('.jpg', result_img)
+        result_b64 = base64.b64encode(buffer).decode('utf-8')
+        result_src = f'data:image/jpeg;base64,{result_b64}'
+
+        # Prepare bounding box list
+        face_list = []
+        for i, (x, y, w, h) in enumerate(faces):
+            face_list.append({
+                'id': i + 1,
+                'x': int(x),
+                'y': int(y),
+                'width': int(w),
+                'height': int(h)
+            })
+
+        return jsonify({
+            'success': True,
+            'face_count': len(faces),
+            'faces': face_list,
+            'result_image': result_src,
+            'mode': 'grayscale' if len(image.shape) == 2 else 'color'
+        })
+
+    except Exception as exc:
+        return jsonify({'success': False, 'error': str(exc)}), 500
+
+
+
+@app.route('/api/detect-recognize', methods=['POST'])
+def detect_and_recognize():
+    """Detect faces and recognize each one using PCA/KNN."""
+    image = _load_image_from_request()
+    if image is None:
+        return jsonify({'success': False, 'error': 'No image provided'}), 400
+
+    try:
+        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        cascade_path = cv2.data.haarcascades + 'haarcascade_frontalface_default.xml'
+        face_cascade = cv2.CascadeClassifier(cascade_path)
+
+        faces = face_cascade.detectMultiScale(
+            gray,
+            scaleFactor=1.1,
+            minNeighbors=5,
+            minSize=(30, 30)
+        )
+
+        result_img = image.copy()
+        face_results = []
+
+        for (x, y, w, h) in faces:
+            # Extract face region from grayscale image
+            face_roi = gray[y:y+h, x:x+w]
+            person_name, confidence, distance, recognized = _recognize_face_region(face_roi)
+
+            # Draw bounding box and label
+            color = (65, 84, 241) if recognized else (220, 53, 69)   # blue if known, red if unknown
+            cv2.rectangle(result_img, (x, y), (x + w, y + h), color, 2)
+            label = f"{person_name} ({confidence:.0f}%)" if recognized else "Unknown"
+            cv2.putText(result_img, label, (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX,
+                        0.5, color, 2)
+
+            face_results.append({
+                'id': len(face_results) + 1,
+                'x': int(x),
+                'y': int(y),
+                'width': int(w),
+                'height': int(h),
+                'person': person_name if recognized else 'Unknown',
+                'confidence': round(confidence, 2),
+                'distance': round(distance, 4),
+                'recognized': recognized
+            })
+
+        # Encode result image to base64
+        _, buffer = cv2.imencode('.jpg', result_img)
+        result_b64 = base64.b64encode(buffer).decode('utf-8')
+        result_src = f'data:image/jpeg;base64,{result_b64}'
+
+        return jsonify({
+            'success': True,
+            'face_count': len(faces),
+            'faces': face_results,
+            'result_image': result_src,
+            'mode': 'grayscale' if len(image.shape) == 2 else 'color'
+        })
+
+    except Exception as exc:
+        return jsonify({'success': False, 'error': str(exc)}), 500
+
+
+def _preprocess_face_region(face_roi_gray: np.ndarray) -> np.ndarray:
+    """
+    Pad a possibly non-square face region to match the exact image_size while
+    preserving the aspect ratio - just like the training faces were prepared.
+    
+    Returns a normalized, flattened feature vector.
+    """
+    h, w = face_roi_gray.shape
+    target_w, target_h = image_size  # from config (e.g., 92, 112)
+
+    # --- Scale the face to fit inside the target size, keeping aspect ratio ---
+    scale = min(target_w / w, target_h / h)
+    new_w = int(w * scale)
+    new_h = int(h * scale)
+    resized = cv2.resize(face_roi_gray, (new_w, new_h))
+
+    # --- Create a black canvas of exactly target size, place face in the centre ---
+    canvas = np.zeros((target_h, target_w), dtype=np.float32)
+    x_offset = (target_w - new_w) // 2
+    y_offset = (target_h - new_h) // 2
+    canvas[y_offset:y_offset+new_h, x_offset:x_offset+new_w] = resized
+
+    # Normalise to [0,1] and flatten
+    canvas = canvas / 255.0
+    return canvas.flatten().reshape(1, -1)
+
+
+def _recognize_face_region(face_roi_gray: np.ndarray) -> tuple[str, float, float, bool]:
+    """
+    Recognize a detected face ROI using the PCA+KNN model.
+    Returns (person_name, confidence, distance, is_known).
+    """
+    feature_vector = _preprocess_face_region(face_roi_gray)
+
+    # PCA projection
+    pca_features = pca_model.transform(feature_vector)
+
+    # Predict label
+    predicted_label = int(knn_model.predict(pca_features)[0])
+    person_name = label_map.get(predicted_label, f'unknown_{predicted_label}')
+
+    # Distance and confidence
+    distances, _ = knn_model.kneighbors(pca_features, n_neighbors=1)
+    distance = float(distances[0][0])
+    confidence = max(0.0, min(100.0, 100.0 - distance * 50.0))
+
+    # Threshold – adjust this value based on your dataset
+    THRESHOLD = 50.0  # lower if too many known faces become Unknown
+    recognized = confidence > THRESHOLD
+
+    return person_name, confidence, distance, recognized
 if __name__ == '__main__':
     app.run(debug=True, port=5000)

@@ -3,265 +3,436 @@
 <head>
   <meta charset="utf-8">
   <meta content="width=device-width, initial-scale=1.0" name="viewport">
-  <title>Face Recognition - FlexStart</title>
+  <title>Face Detection & Recognition – EigenVision Suite</title>
 
-  <!-- Favicons -->
   <link href="../assets/img/favicon.png" rel="icon">
   <link href="../assets/img/apple-touch-icon.png" rel="apple-touch-icon">
 
-  <!-- Fonts -->
   <link href="https://fonts.googleapis.com" rel="preconnect">
   <link href="https://fonts.gstatic.com" rel="preconnect" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&family=Nunito:ital,wght@0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Poppins:wght@400;500;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
 
-  <!-- Vendor CSS Files -->
   <link href="../assets/vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
   <link href="../assets/vendor/bootstrap-icons/bootstrap-icons.css" rel="stylesheet">
   <link href="../assets/vendor/aos/aos.css" rel="stylesheet">
   <link href="../assets/vendor/glightbox/css/glightbox.min.css" rel="stylesheet">
   <link href="../assets/vendor/swiper/swiper-bundle.min.css" rel="stylesheet">
-
-  <!-- Main CSS File -->
   <link href="../assets/css/main.css" rel="stylesheet">
+  <link href="../assets/css/faceRecognition.css" rel="stylesheet">
 </head>
 <body class="index-page">
 
   <header id="header" class="header d-flex align-items-center fixed-top">
     <div class="container-fluid container-xl position-relative d-flex align-items-center">
-
       <a href="/" class="logo d-flex align-items-center">
         <img src="../assets/img/Logo-Cv-04.png" alt="">
-        
       </a>
-
       <nav id="navmenu" class="navmenu mx-auto">
         <ul>
           <li><a href="/">Home</a></li>
           <li><a href="/#services">Capabilities</a></li>
-          <li><a href="/#metrics">Model Metrics</a></li>
           <li><a href="/faceRecognition" class="active">Face Recognition</a></li>
           <li><a href="/segmentation">Segmentation</a></li>
         </ul>
         <i class="mobile-nav-toggle d-xl-none bi bi-list"></i>
       </nav>
-
       <a class="btn-getstarted flex-md-shrink-0" href="/faceRecognition">Try Demo</a>
-
     </div>
   </header>
 
   <main class="main" style="padding-top: 80px;">
 
-    <!-- Face Recognition Section -->
-    <section id="face-recognition" class="face-recognition section">
+    <section class="fr-main-section section">
+      <div class="container">
 
-      <div class="container section-title" data-aos="fade-up">
-        <h2>Face Recognition</h2>
-        <p>Upload an image and let the PCA model predict the name.</p>
-      </div>
+        <!-- Tab Nav -->
+        <div class="fr-tab-nav" data-aos="fade-up">
+          <button class="fr-tab-btn active" data-tab="detection">
+            <i class="bi bi-camera-fill"></i>
+            <span>Face Detection</span>
+            <small>Locate &amp; highlight faces</small>
+          </button>
+          <button class="fr-tab-btn" data-tab="recognition">
+            <i class="bi bi-person-badge-fill"></i>
+            <span>Face Recognition</span>
+            <small>Identify via PCA / Eigenfaces</small>
+          </button>
+        </div>
 
-      <div class="container" data-aos="fade-up" data-aos-delay="100">
-        <div class="row g-4 align-items-stretch">
-          <div class="col-lg-7">
-            <div class="card border-0 shadow-sm h-100">
-              <div class="card-body p-4 p-lg-5">
-                <div id="upload-area" class="upload-dropzone text-center">
-                  <i class="bi bi-cloud-arrow-up upload-icon"></i>
-                  <h3 class="h4 mt-3">Drop an image here</h3>
-                  <p class="mb-0">or click to choose a face photo</p>
-                  <input id="image-input" type="file" accept="image/*" hidden>
-                </div>
+        <!-- TAB 1 – DETECTION -->
+        <div id="tab-detection" class="fr-tab-panel active" data-aos="fade-up" data-aos-delay="100">
+          <div class="row g-4 align-items-stretch">
 
-                <div id="preview-container" class="mt-4 d-none">
-                  <img id="preview-image" class="img-fluid rounded preview-image" alt="Selected preview">
-                  <div class="d-flex gap-2 mt-3">
-                    <button id="clear-btn" type="button" class="btn btn-outline-primary">Clear Image</button>
-                    <a href="/segmentation" class="btn btn-primary">Segmentation Placeholder</a>
+            <!-- Upload card -->
+            <div class="col-lg-7">
+              <div class="fr-card h-100">
+                <div class="fr-card-header">
+                  <i class="bi bi-upload"></i>
+                  <div>
+                    <h3>Upload Image</h3>
+                    <p>Supports colour &amp; grayscale • JPG / PNG / WEBP</p>
                   </div>
                 </div>
+                <div class="fr-card-body">
 
-                <div id="loading-spinner" class="text-center mt-4 d-none">
-                  <div class="spinner-border text-primary" role="status" aria-hidden="true"></div>
-                  <p class="mt-3 mb-0">Predicting name...</p>
-                </div>
+                  <!-- Dropzone -->
+                  <div id="det-upload-area" class="fr-dropzone">
+                    <div class="fr-dropzone-inner">
+                      <div class="fr-dropzone-icon"><i class="bi bi-image"></i></div>
+                      <h4>Drop your image here</h4>
+                      <p>or <span class="fr-link">browse files</span></p>
+                      <div class="fr-dropzone-hint"><i class="bi bi-info-circle"></i> Color or grayscale images accepted</div>
+                    </div>
+                    <input id="det-image-input" type="file" accept="image/*" hidden>
+                  </div>
 
-                <div id="results-container" class="alert alert-success mt-4 d-none">
-                  <h3 class="h5 alert-heading">Recognition Result</h3>
-                  <p class="mb-2"><strong>Name:</strong> <span id="person-name"></span></p>
-                  <p class="mb-2"><strong>Confidence:</strong> <span id="confidence-level"></span></p>
-                  <div class="progress" style="height: 10px;">
-                    <div id="confidence-bar" class="progress-bar" role="progressbar" style="width: 0%"></div>
+                  <!-- Open Camera Button -->
+                  <div class="text-center mt-3" id="det-camera-btn-wrap">
+                    <button type="button" class="fr-btn fr-btn-ghost" id="det-open-camera-btn">
+                      <i class="bi bi-camera-video-fill"></i> Use Camera
+                    </button>
+                  </div>
+
+                  <!-- Camera Modal -->
+                  <div id="camera-modal" class="fr-camera-modal d-none">
+                    <div class="fr-camera-backdrop"></div>
+                    <div class="fr-camera-dialog">
+                      <div class="fr-camera-header">
+                        <h5><i class="bi bi-camera-video"></i> Live Camera</h5>
+                        <button type="button" class="btn-close" id="camera-close-btn" aria-label="Close"></button>
+                      </div>
+                      <div class="fr-camera-body">
+                        <video id="camera-video" autoplay playsinline muted></video>
+                        <canvas id="camera-canvas" class="d-none"></canvas>
+                      </div>
+                      <div class="fr-camera-footer">
+                        <button type="button" class="fr-btn fr-btn-ghost" id="camera-cancel-btn">Cancel</button>
+                        <button type="button" class="fr-btn fr-btn-primary" id="camera-capture-btn">
+                          <i class="bi bi-camera-fill"></i> Capture
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Preview (after upload / capture) -->
+                  <div id="det-preview-wrap" class="d-none">
+                    <div class="fr-preview-grid">
+                      <div class="fr-preview-item">
+                        <label class="fr-preview-label"><i class="bi bi-image"></i> Original</label>
+                        <img id="det-preview-original" class="fr-preview-img" alt="Original">
+                      </div>
+                      <div class="fr-preview-item">
+                        <label class="fr-preview-label"><i class="bi bi-bounding-box-circles"></i> Detected Faces</label>
+                        <img id="det-preview-result" class="fr-preview-img" alt="Detection result">
+                        <div id="det-preview-placeholder" class="fr-preview-placeholder">
+                          <div class="spinner-border text-primary" role="status"></div>
+                          <span>Running detection…</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="d-flex gap-2 mt-3 flex-wrap">
+                      <button id="det-clear-btn" type="button" class="fr-btn fr-btn-ghost"><i class="bi bi-x-circle"></i> Clear</button>
+                      <button id="det-rerun-btn" type="button" class="fr-btn fr-btn-primary"><i class="bi bi-arrow-repeat"></i> Re-run Detection</button>
+                    </div>
+                  </div>
+
+                  <!-- Loading -->
+                  <div id="det-loading" class="fr-status-box d-none">
+                    <div class="fr-status-icon spin"><i class="bi bi-arrow-repeat"></i></div>
+                    <div>
+                      <strong>Detecting faces…</strong>
+                      <p>Running Haar Cascade on your image</p>
+                    </div>
+                  </div>
+
+                  <!-- Error -->
+                  <div id="det-error" class="fr-alert fr-alert-danger d-none">
+                    <i class="bi bi-exclamation-triangle-fill"></i>
+                    <span id="det-error-msg"></span>
                   </div>
                 </div>
+              </div>
+            </div>
 
-                <div id="error-container" class="alert alert-danger mt-4 d-none">
-                  <p id="error-message" class="mb-0"></p>
+            <!-- Detection results card -->
+            <div class="col-lg-5">
+              <div class="fr-card h-100">
+                <div class="fr-card-header">
+                  <i class="bi bi-list-check"></i>
+                  <div>
+                    <h3>Detection Results</h3>
+                    <p>Bounding boxes &amp; face details</p>
+                  </div>
+                </div>
+                <div class="fr-card-body">
+                  <div id="det-results-empty" class="fr-empty-state">
+                    <i class="bi bi-camera-reels"></i>
+                    <p>Upload an image or use the camera to start face detection</p>
+                  </div>
+                  <div id="det-results" class="d-none">
+                    <div class="fr-result-summary">
+                      <div class="fr-result-count">
+                        <span id="det-face-count">0</span>
+                        <label>Faces Found</label>
+                      </div>
+                      <div class="fr-result-badge" id="det-mode-badge">–</div>
+                    </div>
+                    <div id="det-face-list" class="fr-face-list mt-3"></div>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
 
-          <div class="col-lg-5">
-            <div class="card border-0 shadow-sm h-100">
-              <div class="card-body p-4 p-lg-5 text-center">
-                <h3 class="h4 mb-4">ROC Curve</h3>
-                <img src="../assets/img/output.png" class="img-fluid rounded shadow-sm" alt="ROC Curve">
-                <p class="mt-4 text-muted small">Receiver Operating Characteristic (ROC) curve showing the performance of our PCA-based recognition model.</p>
+          <!-- Detection Info Cards -->
+          <div class="row g-3 mt-2">
+            <div class="col-md-4">
+              <div class="fr-info-card">
+                <i class="bi bi-layers-fill"></i>
+                <div>
+                  <strong>Haar Cascade</strong>
+                  <p>Viola-Jones algorithm — fast, real-time face detection using pre-trained cascade classifiers.</p>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="fr-info-card">
+                <i class="bi bi-palette2"></i>
+                <div>
+                  <strong>Color &amp; Grayscale</strong>
+                  <p>Automatically converts color images to grayscale for optimal detection while preserving originals.</p>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="fr-info-card">
+                <i class="bi bi-bounding-box"></i>
+                <div>
+                  <strong>Bounding Boxes</strong>
+                  <p>Returns pixel coordinates (x, y, w, h) for every detected face region in the image.</p>
+                </div>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- Model Evaluation Metrics -->
-        <div class="row g-4 mt-5">
-          <div class="col-12">
-            <h3 class="h4 mb-4">Model Evaluation Metrics (PCA Notebook)</h3>
-          </div>
-          <div id="metrics-loading" class="col-12">
-            <div class="text-center">
-              <div class="spinner-border text-primary" role="status">
-                <span class="visually-hidden">Loading metrics...</span>
-              </div>
-              <p class="mt-2 text-muted">Loading model evaluation metrics...</p>
-            </div>
-          </div>
-          <div id="metrics-content" style="display: none;" class="col-12">
-            <!-- Accuracy Metrics -->
-            <div class="row g-3 mb-4">
-              <div class="col-md-4">
-                <div class="card border-0 shadow-sm">
-                  <div class="card-body text-center">
-                    <h6 class="text-muted mb-2">Train Accuracy</h6>
-                    <h3 class="text-primary" id="train-accuracy">-</h3>
+        <!-- TAB 2 – RECOGNITION -->
+        <div id="tab-recognition" class="fr-tab-panel" data-aos="fade-up" data-aos-delay="100">
+          <div class="row g-4 align-items-stretch">
+
+            <!-- Upload card -->
+            <div class="col-lg-7">
+              <div class="fr-card h-100">
+                <div class="fr-card-header">
+                  <i class="bi bi-person-bounding-box"></i>
+                  <div>
+                    <h3>Recognize Face</h3>
+                    <p>Upload a cropped face — PCA/KNN will identify the person</p>
                   </div>
                 </div>
-              </div>
-              <div class="col-md-4">
-                <div class="card border-0 shadow-sm">
-                  <div class="card-body text-center">
-                    <h6 class="text-muted mb-2">Test Accuracy</h6>
-                    <h3 class="text-success" id="test-accuracy">-</h3>
+                <div class="fr-card-body">
+
+                  <!-- Dropzone -->
+                  <div id="rec-upload-area" class="fr-dropzone">
+                    <div class="fr-dropzone-inner">
+                      <div class="fr-dropzone-icon"><i class="bi bi-person-circle"></i></div>
+                      <h4>Drop a face photo here</h4>
+                      <p>or <span class="fr-link">browse files</span></p>
+                      <div class="fr-dropzone-hint"><i class="bi bi-info-circle"></i> Best results with a single, forward-facing face</div>
+                    </div>
+                    <input id="rec-image-input" type="file" accept="image/*" hidden>
                   </div>
-                </div>
-              </div>
-              <div class="col-md-4">
-                <div class="card border-0 shadow-sm">
-                  <div class="card-body text-center">
-                    <h6 class="text-muted mb-2">Model Info</h6>
-                    <small id="model-info" class="text-muted d-block">-</small>
+
+                  <!-- Preview -->
+                  <div id="rec-preview-wrap" class="d-none">
+                    <img id="rec-preview-image" class="fr-preview-single" alt="Selected face">
+                    <div class="d-flex gap-2 mt-3 flex-wrap">
+                      <button id="rec-clear-btn" type="button" class="fr-btn fr-btn-ghost"><i class="bi bi-x-circle"></i> Clear</button>
+                    </div>
                   </div>
+
+                  <!-- Loading -->
+                  <div id="rec-loading" class="fr-status-box d-none">
+                    <div class="fr-status-icon spin"><i class="bi bi-arrow-repeat"></i></div>
+                    <div>
+                      <strong>Recognizing…</strong>
+                      <p>Projecting onto Eigenface space via PCA</p>
+                    </div>
+                  </div>
+
+                  <!-- Error -->
+                  <div id="rec-error" class="fr-alert fr-alert-danger d-none">
+                    <i class="bi bi-exclamation-triangle-fill"></i>
+                    <span id="rec-error-msg"></span>
+                  </div>
+
+                  <!-- Result -->
+                  <div id="rec-result" class="d-none">
+                    <div class="fr-result-card">
+                      <div class="fr-result-avatar" id="rec-result-avatar">?</div>
+                      <div class="fr-result-info">
+                        <label>Identified as</label>
+                        <h2 id="rec-person-name">–</h2>
+                        <div class="fr-confidence-row">
+                          <span>Confidence</span>
+                          <strong id="rec-confidence-pct">–</strong>
+                        </div>
+                        <div class="fr-progress-track">
+                          <div class="fr-progress-fill" id="rec-conf-bar" style="width: 0%"></div>
+                        </div>
+                        <small class="text-muted">PCA distance: <span id="rec-distance">–</span></small>
+                      </div>
+                    </div>
+                  </div>
+
                 </div>
               </div>
             </div>
 
-            <!-- Per-Class Metrics -->
-            <div class="card border-0 shadow-sm">
-              <div class="card-body">
-                <h5 class="mb-3">Per-Class Accuracy</h5>
-                <div class="table-responsive">
-                  <table class="table table-sm">
-                    <thead>
-                      <tr>
-                        <th>Person</th>
-                        <th>Test Samples</th>
-                        <th>Accuracy</th>
-                      </tr>
-                    </thead>
-                    <tbody id="class-metrics-table">
-                      <tr><td colspan="3" class="text-center text-muted">Loading...</td></tr>
-                    </tbody>
-                  </table>
+            <!-- ROC + Known People (you can add back if needed) -->
+            <div class="col-lg-5 d-flex flex-column gap-4">
+              <!-- ROC -->
+              <div class="fr-card flex-grow-0">
+                <div class="fr-card-header">
+                  <i class="bi bi-graph-up-arrow"></i>
+                  <div>
+                    <h3>ROC Curve</h3>
+                    <p>Receiver Operating Characteristic</p>
+                  </div>
+                </div>
+                <div class="fr-card-body text-center">
+                  <img src="../assets/img/output.png" class="fr-roc-img" alt="ROC Curve">
+                  <p class="mt-2 text-muted" style="font-size:0.78rem;">ROC curve for PCA-based face recognition (one-vs-rest).</p>
                 </div>
               </div>
             </div>
           </div>
-          <div id="metrics-error" style="display: none;" class="col-12">
-            <div class="alert alert-warning">
-              <i class="bi bi-exclamation-circle"></i>
-              <span id="metrics-error-text">Could not load model metrics</span>
+
+          <!-- Model Metrics -->
+          <div class="fr-metrics-section mt-5" data-aos="fade-up">
+            <div class="fr-section-label"><i class="bi bi-bar-chart-line-fill"></i> Model Evaluation Metrics</div>
+            <div id="metrics-loading" class="fr-metrics-loading">
+              <div class="spinner-border text-primary" role="status"></div>
+              <p>Loading model metrics…</p>
+            </div>
+            <div id="metrics-content" style="display:none;">
+              <!-- KPI row -->
+              <div class="row g-3 mb-4">
+                <div class="col-md-4">
+                  <div class="fr-kpi-card">
+                    <div class="fr-kpi-icon" style="--kpi-color:#4154f1"><i class="bi bi-mortarboard-fill"></i></div>
+                    <div>
+                      <small>Train Accuracy</small>
+                      <h3 id="train-accuracy">–</h3>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-4">
+                  <div class="fr-kpi-card">
+                    <div class="fr-kpi-icon" style="--kpi-color:#20c997"><i class="bi bi-patch-check-fill"></i></div>
+                    <div>
+                      <small>Test Accuracy</small>
+                      <h3 id="test-accuracy">–</h3>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-4">
+                  <div class="fr-kpi-card">
+                    <div class="fr-kpi-icon" style="--kpi-color:#fd7e14"><i class="bi bi-cpu-fill"></i></div>
+                    <div>
+                      <small>Model Info</small>
+                      <small id="model-info" class="d-block text-muted mt-1">–</small>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <!-- Per-class table -->
+              <div class="fr-card">
+                <div class="fr-card-header">
+                  <i class="bi bi-table"></i>
+                  <div><h3>Per-Class Accuracy</h3><p>Recognition performance for each individual</p></div>
+                </div>
+                <div class="fr-card-body p-0">
+                  <div class="table-responsive">
+                    <table class="table fr-table mb-0">
+                      <thead>
+                        <tr><th>#</th><th>Person</th><th>Test Samples</th><th>Accuracy</th><th>Bar</th></tr>
+                      </thead>
+                      <tbody id="class-metrics-table">
+                        <tr><td colspan="5" class="text-center text-muted py-3">Loading…</td></tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div id="metrics-error" style="display:none;">
+              <div class="fr-alert fr-alert-warning">
+                <i class="bi bi-exclamation-circle"></i>
+                <span id="metrics-error-text">Could not load model metrics. Make sure the Flask backend is running.</span>
+              </div>
             </div>
           </div>
-        </div>
+        </div><!-- /tab-recognition -->
+
       </div>
-
-    </section><!-- /Face Recognition Section -->
+    </section>
 
   </main>
 
   <footer id="footer" class="footer">
-
     <div class="container footer-top">
       <div class="row gy-4">
         <div class="col-lg-4 col-md-6 footer-about">
-          <a href="/" class="d-flex align-items-center">
-            <span class="sitename">FlexStart</span>
-          </a>
+          <a href="/" class="d-flex align-items-center"><span class="sitename">EigenVisionSuite</span></a>
           <div class="footer-contact pt-3">
-            <p>A108 Adam Street</p>
-            <p>New York, NY 535022</p>
-            <p class="mt-3"><strong>Phone:</strong> <span>+1 5589 55488 55</span></p>
-            <p><strong>Email:</strong> <span>info@example.com</span></p>
+            <p>Computer Vision Research Lab</p>
+            <p>PCA · Eigenfaces · Segmentation</p>
+            <p class="mt-3"><strong>Project:</strong> Face Recognition + Segmentation modules</p>
           </div>
         </div>
-
         <div class="col-lg-2 col-md-3 footer-links">
-          <h4>Useful Links</h4>
+          <h4>Explore</h4>
           <ul>
             <li><i class="bi bi-chevron-right"></i> <a href="/">Home</a></li>
-            <li><i class="bi bi-chevron-right"></i> <a href="#">About us</a></li>
-            <li><i class="bi bi-chevron-right"></i> <a href="#">Services</a></li>
-            <li><i class="bi bi-chevron-right"></i> <a href="#">Terms of service</a></li>
+            <li><i class="bi bi-chevron-right"></i> <a href="/#services">Capabilities</a></li>
+            <li><i class="bi bi-chevron-right"></i> <a href="/faceRecognition">Face Recognition</a></li>
+            <li><i class="bi bi-chevron-right"></i> <a href="/segmentation">Segmentation</a></li>
           </ul>
         </div>
-
         <div class="col-lg-2 col-md-3 footer-links">
-          <h4>Our Services</h4>
+          <h4>Methods</h4>
           <ul>
-            <li><i class="bi bi-chevron-right"></i> <a href="#">Web Design</a></li>
-            <li><i class="bi bi-chevron-right"></i> <a href="#">Web Development</a></li>
-            <li><i class="bi bi-chevron-right"></i> <a href="#">Product Management</a></li>
-            <li><i class="bi bi-chevron-right"></i> <a href="#">Marketing</a></li>
+            <li><i class="bi bi-chevron-right"></i> <a href="#">PCA / KNN</a></li>
+            <li><i class="bi bi-chevron-right"></i> <a href="#">Haar Cascade</a></li>
+            <li><i class="bi bi-chevron-right"></i> <a href="#">Eigenfaces</a></li>
+            <li><i class="bi bi-chevron-right"></i> <a href="#">ROC Analysis</a></li>
           </ul>
         </div>
-
         <div class="col-lg-4 col-md-12">
-          <h4>Follow Us</h4>
-          <p>Cras fermentum odio eu feugiat lide par naso tierra videa magna derita valies</p>
+          <h4>Open Source Framework</h4>
+          <p>Built with Python, Flask, OpenCV, scikit-learn. Eigenface recognition + segmentation algorithms ready for benchmarking.</p>
           <div class="social-links d-flex">
-            <a href=""><i class="bi bi-twitter-x"></i></a>
-            <a href=""><i class="bi bi-facebook"></i></a>
-            <a href=""><i class="bi bi-instagram"></i></a>
-            <a href=""><i class="bi bi-linkedin"></i></a>
+            <a href="#"><i class="bi bi-github"></i></a>
+            <a href="#"><i class="bi bi-book"></i></a>
           </div>
         </div>
-
       </div>
     </div>
-
     <div class="container copyright text-center mt-4">
-      <p>© <span>Copyright</span> <strong class="px-1 sitename">FlexStart</strong> <span>All Rights Reserved</span></p>
-      <div class="credits">
-        Designed by <a href="https://bootstrapmade.com/">BootstrapMade</a> Distributed by <a href="https://themewagon.com/">ThemeWagon</a>
-      </div>
+      <p>© <span>Copyright</span> <strong class="px-1 sitename">EigenVisionSuite</strong> <span>Computer Vision Project</span></p>
     </div>
-
   </footer>
 
-  <!-- Scroll Top -->
   <a href="#" id="scroll-top" class="scroll-top d-flex align-items-center justify-content-center"><i class="bi bi-arrow-up-short"></i></a>
 
-  <!-- Vendor JS Files -->
   <script src="../assets/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
-  <script src="../assets/vendor/php-email-form/validate.js"></script>
   <script src="../assets/vendor/aos/aos.js"></script>
   <script src="../assets/vendor/glightbox/js/glightbox.min.js"></script>
   <script src="../assets/vendor/purecounter/purecounter_vanilla.js"></script>
   <script src="../assets/vendor/imagesloaded/imagesloaded.pkgd.min.js"></script>
-  <script src="../assets/vendor/isotope-layout/isotope.pkgd.min.js"></script>
   <script src="../assets/vendor/swiper/swiper-bundle.min.js"></script>
-
-  <!-- Main JS File -->
   <script src="../assets/js/main.js"></script>
-
+  <script src="../assets/js/faceRecognition.js"></script>
 </body>
 </html>
