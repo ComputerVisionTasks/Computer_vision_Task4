@@ -334,21 +334,82 @@
 
           <div class="col-lg-5">
             <div class="card border-0 shadow-sm h-100">
-              <div class="card-body p-4 p-lg-5">
-                <h3 class="h4">What happens here</h3>
-                <ul class="feature-list mt-3 mb-4">
-                  <li>Upload one face image from your device.</li>
-                  <li>The backend resizes it to 100x100 grayscale.</li>
-                  <li>PCA transforms the image before KNN predicts the label.</li>
-                </ul>
-
-                <div class="info-box p-3 rounded mb-4">
-                  <p class="mb-1 fw-semibold">Recognized people</p>
-                  <p class="mb-0 text-muted">The list below is loaded from your trained model labels.</p>
-                </div>
-
-                <div id="people-list" class="row g-3"></div>
+              <div class="card-body p-4 p-lg-5 text-center">
+                <h3 class="h4 mb-4">ROC Curve</h3>
+                <img src="assets/img/output.png" class="img-fluid rounded shadow-sm" alt="ROC Curve">
+                <p class="mt-4 text-muted small">Receiver Operating Characteristic (ROC) curve showing the performance of our PCA-based recognition model.</p>
               </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Model Evaluation Metrics -->
+        <div class="row g-4 mt-5">
+          <div class="col-12">
+            <h3 class="h4 mb-4">Model Evaluation Metrics (PCA Notebook)</h3>
+          </div>
+          <div id="metrics-loading" class="col-12">
+            <div class="text-center">
+              <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading metrics...</span>
+              </div>
+              <p class="mt-2 text-muted">Loading model evaluation metrics...</p>
+            </div>
+          </div>
+          <div id="metrics-content" style="display: none;" class="col-12">
+            <!-- Accuracy Metrics -->
+            <div class="row g-3 mb-4">
+              <div class="col-md-4">
+                <div class="card border-0 shadow-sm">
+                  <div class="card-body text-center">
+                    <h6 class="text-muted mb-2">Train Accuracy</h6>
+                    <h3 class="text-primary" id="train-accuracy">-</h3>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-4">
+                <div class="card border-0 shadow-sm">
+                  <div class="card-body text-center">
+                    <h6 class="text-muted mb-2">Test Accuracy</h6>
+                    <h3 class="text-success" id="test-accuracy">-</h3>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-4">
+                <div class="card border-0 shadow-sm">
+                  <div class="card-body text-center">
+                    <h6 class="text-muted mb-2">Model Info</h6>
+                    <small id="model-info" class="text-muted d-block">-</small>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Per-Class Metrics -->
+            <div class="card border-0 shadow-sm">
+              <div class="card-body">
+                <h5 class="mb-3">Per-Class Accuracy</h5>
+                <div class="table-responsive">
+                  <table class="table table-sm">
+                    <thead>
+                      <tr>
+                        <th>Person</th>
+                        <th>Test Samples</th>
+                        <th>Accuracy</th>
+                      </tr>
+                    </thead>
+                    <tbody id="class-metrics-table">
+                      <tr><td colspan="3" class="text-center text-muted">Loading...</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div id="metrics-error" style="display: none;" class="col-12">
+            <div class="alert alert-warning">
+              <i class="bi bi-exclamation-circle"></i>
+              <span id="metrics-error-text">Could not load model metrics</span>
             </div>
           </div>
         </div>

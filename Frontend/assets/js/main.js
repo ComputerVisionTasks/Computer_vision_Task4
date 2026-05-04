@@ -222,7 +222,7 @@
     /** @type {HTMLElement|null} */
     const peopleList = document.getElementById('people-list');
 
-    if (!uploadArea || !imageInput || !previewContainer || !previewImage || !peopleList) {
+    if (!uploadArea || !imageInput || !previewContainer || !previewImage) {
       return;
     }
 
@@ -260,6 +260,7 @@
 
     /** @param {string[]} labels */
     const renderPeople = (labels) => {
+      if (!peopleList) return;
       peopleList.innerHTML = labels.map((label) => `
         <div class="col-6 col-md-4">
           <div class="people-item">
@@ -271,6 +272,7 @@
     };
 
     const loadPeopleDatabase = async () => {
+      if (!peopleList) return;
       try {
         const response = await fetch('/api/labels');
         const data = await response.json();
@@ -392,6 +394,81 @@
     loadPeopleDatabase();
   }
 
+  /**
+   * Load and display model evaluation metrics
+   */
+  function loadModelMetrics() {
+    const metricsLoading = document.getElementById('metrics-loading');
+    const metricsContent = document.getElementById('metrics-content');
+    const metricsError = document.getElementById('metrics-error');
+
+    if (!metricsLoading || !metricsContent) {
+      return;
+    }
+
+    fetch('/api/model-metrics')
+      .then(response => response.json())
+      .then(data => {
+        if (!data.success || !data.available) {
+          throw new Error(data.error || 'Metrics not available');
+        }
+
+        // Display accuracy metrics
+        document.getElementById('train-accuracy').textContent = 
+          (data.train_accuracy * 100).toFixed(2) + '%';
+        document.getElementById('test-accuracy').textContent = 
+          (data.test_accuracy * 100).toFixed(2) + '%';
+        
+        // Display model info
+        const modelInfoEl = document.getElementById('model-info');
+        if (modelInfoEl && data.model_info) {
+          modelInfoEl.innerHTML = `
+            <strong>PCA Components:</strong> ${data.model_info.n_components}<br>
+            <strong>KNN Neighbors:</strong> ${data.model_info.n_neighbors}
+          `;
+        }
+
+        // Display per-class metrics
+        const tableBody = document.getElementById('class-metrics-table');
+        if (tableBody && data.class_metrics) {
+          tableBody.innerHTML = '';
+          
+          Object.keys(data.class_metrics).forEach(classId => {
+            const metric = data.class_metrics[classId];
+            const row = document.createElement('tr');
+            row.innerHTML = `
+              <td><strong>${metric.label}</strong></td>
+              <td>${metric.samples}</td>
+              <td>
+                <span class="badge" style="background-color: ${metric.accuracy >= 0.9 ? '#28a745' : metric.accuracy >= 0.7 ? '#ffc107' : '#dc3545'}">
+                  ${(metric.accuracy * 100).toFixed(1)}%
+                </span>
+              </td>
+            `;
+            tableBody.appendChild(row);
+          });
+        }
+
+        // Show content and hide loading
+        metricsLoading.style.display = 'none';
+        metricsContent.style.display = 'block';
+        metricsError.style.display = 'none';
+
+      })
+      .catch(error => {
+        console.error('Error loading metrics:', error);
+        metricsLoading.style.display = 'none';
+        metricsContent.style.display = 'none';
+        metricsError.style.display = 'block';
+        
+        const errorText = document.getElementById('metrics-error-text');
+        if (errorText) {
+          errorText.textContent = error.message || 'Could not load model metrics';
+        }
+      });
+  }
+
   window.addEventListener('load', initFaceRecognition);
+  window.addEventListener('load', loadModelMetrics);
 
 })();

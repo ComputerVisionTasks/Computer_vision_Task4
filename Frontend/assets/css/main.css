@@ -2405,6 +2405,36 @@ section,
   background: linear-gradient(90deg, var(--accent-color), #6c8cff);
 }
 
+.face-recognition .card {
+  border: 1px solid color-mix(in srgb, var(--default-color), transparent 90%) !important;
+}
+
+.face-recognition .card-body {
+  background: color-mix(in srgb, var(--accent-color), transparent 98%);
+}
+
+.face-recognition .table-responsive {
+  border-radius: 4px;
+}
+
+.face-recognition .table th {
+  background-color: color-mix(in srgb, var(--accent-color), transparent 95%);
+  border-bottom: 2px solid color-mix(in srgb, var(--accent-color), transparent 80%);
+  font-weight: 600;
+  color: var(--accent-color);
+}
+
+.face-recognition .table td {
+  vertical-align: middle;
+  padding: 12px 8px;
+}
+
+.face-recognition .badge {
+  font-size: 12px;
+  padding: 4px 10px;
+  font-weight: 600;
+}
+
 .blog-details .meta-top i {
   font-size: 16px;
   margin-right: 8px;

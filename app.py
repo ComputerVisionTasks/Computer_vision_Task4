@@ -9,12 +9,14 @@ import cv2
 import numpy as np
 from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
+from sklearn.metrics import accuracy_score, classification_report
 
 warnings.filterwarnings('ignore')
 
 BASE_DIR = Path(__file__).resolve().parent
 FRONTEND_DIR = BASE_DIR / 'Frontend'
 MODEL_DIR = BASE_DIR / 'face_recognition_pca' / 'model'
+DATA_DIR = BASE_DIR / 'face_recognition_pca' / 'data'
 
 app = Flask(
     __name__,
@@ -36,6 +38,20 @@ with open(MODEL_DIR / 'image_size.json', 'r', encoding='utf-8') as config_file:
 with open(MODEL_DIR / 'label_map.json', 'r', encoding='utf-8') as labels_file:
     raw_label_map = json.load(labels_file)
     label_map = {int(key): value for key, value in raw_label_map.items()}
+
+# Load test data for metrics
+X_test = None
+y_test = None
+X_train = None
+y_train = None
+
+try:
+    X_test = np.load(DATA_DIR / 'X_test.npy')
+    y_test = np.load(DATA_DIR / 'y_test.npy')
+    X_train = np.load(DATA_DIR / 'X_train.npy')
+    y_train = np.load(DATA_DIR / 'y_train.npy')
+except Exception as e:
+    print(f"Warning: Could not load test data: {e}")
 
 
 def _load_image_from_request() -> np.ndarray | None:
@@ -80,6 +96,73 @@ def _predict_person(image: np.ndarray) -> tuple[str, float, float]:
     return person_name, confidence, distance
 
 
+def _compute_model_metrics() -> dict:
+    """Compute evaluation metrics using test data from PCA notebook"""
+    if X_test is None or y_test is None or X_train is None or y_train is None:
+        return {
+            'success': False,
+            'error': 'Test data not available',
+            'available': False
+        }
+    
+    try:
+        # Data is already normalized and flattened from the PCA notebook
+        # No need to divide by 255 or reshape
+        X_test_data = X_test if len(X_test.shape) == 2 else X_test.reshape(X_test.shape[0], -1)
+        X_train_data = X_train if len(X_train.shape) == 2 else X_train.reshape(X_train.shape[0], -1)
+        
+        # Transform with PCA
+        X_test_pca = pca_model.transform(X_test_data)
+        X_train_pca = pca_model.transform(X_train_data)
+        
+        # Get predictions
+        y_train_pred = knn_model.predict(X_train_pca)
+        y_test_pred = knn_model.predict(X_test_pca)
+        
+        # Calculate accuracies
+        train_accuracy = accuracy_score(y_train, y_train_pred)
+        test_accuracy = accuracy_score(y_test, y_test_pred)
+        
+        # Per-class metrics
+        class_metrics = {}
+        unique_labels = np.unique(y_test)
+        
+        for label in sorted(unique_labels):
+            mask = y_test == label
+            if np.sum(mask) > 0:
+                class_acc = accuracy_score(y_test[mask], y_test_pred[mask])
+                class_metrics[str(int(label))] = {
+                    'label': label_map.get(int(label), f'unknown_{label}'),
+                    'samples': int(np.sum(mask)),
+                    'accuracy': round(float(class_acc), 4)
+                }
+        
+        # Model info
+        model_info = {
+            'n_components': int(pca_model.n_components_),
+            'n_neighbors': int(knn_model.n_neighbors),
+            'total_classes': len(label_map)
+        }
+        
+        return {
+            'success': True,
+            'available': True,
+            'train_accuracy': round(float(train_accuracy), 4),
+            'test_accuracy': round(float(test_accuracy), 4),
+            'train_samples': int(len(y_train)),
+            'test_samples': int(len(y_test)),
+            'class_metrics': class_metrics,
+            'model_info': model_info
+        }
+    
+    except Exception as e:
+        return {
+            'success': False,
+            'error': str(e),
+            'available': False
+        }
+
+
 @app.route('/')
 def home() -> object:
     return send_from_directory(FRONTEND_DIR, 'index.html')
@@ -114,6 +197,13 @@ def recognize_face() -> object:
 def get_labels() -> object:
     ordered_labels = [label_map[index] for index in sorted(label_map)]
     return jsonify({'success': True, 'labels': ordered_labels, 'count': len(ordered_labels)})
+
+
+@app.route('/api/model-metrics', methods=['GET'])
+def get_model_metrics() -> object:
+    """Get model evaluation metrics computed from PCA notebook test data"""
+    metrics = _compute_model_metrics()
+    return jsonify(metrics)
 
 
 @app.route('/api/health', methods=['GET'])
