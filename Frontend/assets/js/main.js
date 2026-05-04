@@ -199,4 +199,199 @@
   window.addEventListener('load', navmenuScrollspy);
   document.addEventListener('scroll', navmenuScrollspy);
 
+  /**
+   * Face recognition upload and prediction
+   */
+  function initFaceRecognition() {
+    /** @type {HTMLElement|null} */
+    const uploadArea = document.getElementById('upload-area');
+    /** @type {HTMLInputElement|null} */
+    const imageInput = /** @type {HTMLInputElement|null} */ (document.getElementById('image-input'));
+    /** @type {HTMLElement|null} */
+    const previewContainer = document.getElementById('preview-container');
+    /** @type {HTMLImageElement|null} */
+    const previewImage = /** @type {HTMLImageElement|null} */ (document.getElementById('preview-image'));
+    /** @type {HTMLButtonElement|null} */
+    const clearBtn = /** @type {HTMLButtonElement|null} */ (document.getElementById('clear-btn'));
+    /** @type {HTMLElement|null} */
+    const loadingSpinner = document.getElementById('loading-spinner');
+    /** @type {HTMLElement|null} */
+    const resultsContainer = document.getElementById('results-container');
+    /** @type {HTMLElement|null} */
+    const errorContainer = document.getElementById('error-container');
+    /** @type {HTMLElement|null} */
+    const peopleList = document.getElementById('people-list');
+
+    if (!uploadArea || !imageInput || !previewContainer || !previewImage || !peopleList) {
+      return;
+    }
+
+    /** @param {HTMLElement|null} element */
+    const showElement = (element) => {
+      if (element) {
+        element.classList.remove('d-none');
+      }
+    };
+
+    /** @param {HTMLElement|null} element */
+    const hideElement = (element) => {
+      if (element) {
+        element.classList.add('d-none');
+      }
+    };
+
+    const resetMessages = () => {
+      hideElement(loadingSpinner);
+      hideElement(resultsContainer);
+      hideElement(errorContainer);
+    };
+
+    /** @param {string} message */
+    const showError = (message) => {
+      /** @type {HTMLElement|null} */
+      const errorMessage = document.getElementById('error-message');
+      if (errorMessage) {
+        errorMessage.textContent = message;
+      }
+      hideElement(loadingSpinner);
+      hideElement(resultsContainer);
+      showElement(errorContainer);
+    };
+
+    /** @param {string[]} labels */
+    const renderPeople = (labels) => {
+      peopleList.innerHTML = labels.map((label) => `
+        <div class="col-6 col-md-4">
+          <div class="people-item">
+            <div class="person-avatar">${label.charAt(0).toUpperCase()}</div>
+            <div class="person-name">${label}</div>
+          </div>
+        </div>
+      `).join('');
+    };
+
+    const loadPeopleDatabase = async () => {
+      try {
+        const response = await fetch('/api/labels');
+        const data = await response.json();
+        if (data.success && Array.isArray(data.labels)) {
+          renderPeople(data.labels);
+          return;
+        }
+        peopleList.innerHTML = '<div class="col-12 text-muted">No labels were returned by the backend.</div>';
+      } catch (error) {
+        peopleList.innerHTML = '<div class="col-12 text-muted">Connect the Flask backend to load the database.</div>';
+      }
+    };
+
+    /** @param {File} file */
+    const predictImage = async (file) => {
+      const formData = new FormData();
+      formData.append('image', file);
+      resetMessages();
+      showElement(loadingSpinner);
+
+      try {
+        const response = await fetch('/api/recognize', {
+          method: 'POST',
+          body: formData,
+        });
+        /** @type {{ success?: boolean, error?: string, person?: string, confidence?: number }} */
+        const data = await response.json();
+
+        if (!response.ok || !data.success) {
+          throw new Error(data.error || 'Recognition failed');
+        }
+
+        /** @type {HTMLElement|null} */
+        const personName = document.getElementById('person-name');
+        /** @type {HTMLElement|null} */
+        const confidenceLevel = document.getElementById('confidence-level');
+        /** @type {HTMLElement|null} */
+        const confidenceBar = document.getElementById('confidence-bar');
+
+        if (personName) {
+          personName.textContent = data.person || 'Unknown';
+        }
+        if (confidenceLevel) {
+          confidenceLevel.textContent = `${Math.round(data.confidence || 0)}%`;
+        }
+        if (confidenceBar) {
+          confidenceBar.style.width = `${Math.round(data.confidence || 0)}%`;
+        }
+
+        hideElement(loadingSpinner);
+        showElement(resultsContainer);
+      } catch (error) {
+        showError(error instanceof Error ? error.message : 'Unable to predict the image');
+      }
+    };
+
+    const clearImage = () => {
+      imageInput.value = '';
+      uploadArea.classList.remove('d-none');
+      hideElement(previewContainer);
+      resetMessages();
+    };
+
+    uploadArea.addEventListener('click', () => imageInput.click());
+
+    imageInput.addEventListener('change', (event) => {
+      const target = /** @type {HTMLInputElement} */ (event.currentTarget);
+      const [file] = target.files || [];
+      if (!file) {
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = (readerEvent) => {
+        if (readerEvent.target instanceof FileReader && readerEvent.target.result && previewImage) {
+          previewImage.src = String(readerEvent.target.result);
+        }
+        uploadArea.classList.add('d-none');
+        showElement(previewContainer);
+        predictImage(file);
+      };
+      reader.readAsDataURL(file);
+    });
+
+    uploadArea.addEventListener('dragover', (event) => {
+      event.preventDefault();
+      uploadArea.classList.add('dragover');
+    });
+
+    uploadArea.addEventListener('dragleave', () => {
+      uploadArea.classList.remove('dragover');
+    });
+
+    uploadArea.addEventListener('drop', (event) => {
+      event.preventDefault();
+      uploadArea.classList.remove('dragover');
+      const [file] = event.dataTransfer ? event.dataTransfer.files : [];
+      if (!file || !file.type.startsWith('image/')) {
+        showError('Please drop a valid image file.');
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = (readerEvent) => {
+        if (readerEvent.target instanceof FileReader && readerEvent.target.result && previewImage) {
+          previewImage.src = String(readerEvent.target.result);
+        }
+        uploadArea.classList.add('d-none');
+        showElement(previewContainer);
+        predictImage(file);
+      };
+      reader.readAsDataURL(file);
+    });
+
+    if (clearBtn) {
+      clearBtn.addEventListener('click', clearImage);
+    }
+
+    loadPeopleDatabase();
+  }
+
+  window.addEventListener('load', initFaceRecognition);
+
 })();

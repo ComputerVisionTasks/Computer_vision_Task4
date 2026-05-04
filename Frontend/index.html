@@ -45,6 +45,8 @@
           <li><a href="#hero" class="active">Home<br></a></li>
           <li><a href="#about">About</a></li>
           <li><a href="#services">Services</a></li>
+          <li><a href="#face-recognition">Face Recognition</a></li>
+          <li><a href="/segmentation">Segmentation</a></li>
           <li><a href="#portfolio">Portfolio</a></li>
           <li><a href="#team">Team</a></li>
           <li><a href="blog.html">Blog</a></li>
@@ -280,6 +282,79 @@
       </div>
 
     </section><!-- /Services Section -->
+
+    <!-- Face Recognition Section -->
+    <section id="face-recognition" class="face-recognition section">
+
+      <div class="container section-title" data-aos="fade-up">
+        <h2>Face Recognition</h2>
+        <p>Upload an image and let the PCA model predict the name.</p>
+      </div>
+
+      <div class="container" data-aos="fade-up" data-aos-delay="100">
+        <div class="row g-4 align-items-stretch">
+          <div class="col-lg-7">
+            <div class="card border-0 shadow-sm h-100">
+              <div class="card-body p-4 p-lg-5">
+                <div id="upload-area" class="upload-dropzone text-center">
+                  <i class="bi bi-cloud-arrow-up upload-icon"></i>
+                  <h3 class="h4 mt-3">Drop an image here</h3>
+                  <p class="mb-0">or click to choose a face photo</p>
+                  <input id="image-input" type="file" accept="image/*" hidden>
+                </div>
+
+                <div id="preview-container" class="mt-4 d-none">
+                  <img id="preview-image" class="img-fluid rounded preview-image" alt="Selected preview">
+                  <div class="d-flex gap-2 mt-3">
+                    <button id="clear-btn" type="button" class="btn btn-outline-primary">Clear Image</button>
+                    <a href="/segmentation" class="btn btn-primary">Segmentation Placeholder</a>
+                  </div>
+                </div>
+
+                <div id="loading-spinner" class="text-center mt-4 d-none">
+                  <div class="spinner-border text-primary" role="status" aria-hidden="true"></div>
+                  <p class="mt-3 mb-0">Predicting name...</p>
+                </div>
+
+                <div id="results-container" class="alert alert-success mt-4 d-none">
+                  <h3 class="h5 alert-heading">Recognition Result</h3>
+                  <p class="mb-2"><strong>Name:</strong> <span id="person-name"></span></p>
+                  <p class="mb-2"><strong>Confidence:</strong> <span id="confidence-level"></span></p>
+                  <div class="progress" style="height: 10px;">
+                    <div id="confidence-bar" class="progress-bar" role="progressbar" style="width: 0%"></div>
+                  </div>
+                </div>
+
+                <div id="error-container" class="alert alert-danger mt-4 d-none">
+                  <p id="error-message" class="mb-0"></p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-lg-5">
+            <div class="card border-0 shadow-sm h-100">
+              <div class="card-body p-4 p-lg-5">
+                <h3 class="h4">What happens here</h3>
+                <ul class="feature-list mt-3 mb-4">
+                  <li>Upload one face image from your device.</li>
+                  <li>The backend resizes it to 100x100 grayscale.</li>
+                  <li>PCA transforms the image before KNN predicts the label.</li>
+                </ul>
+
+                <div class="info-box p-3 rounded mb-4">
+                  <p class="mb-1 fw-semibold">Recognized people</p>
+                  <p class="mb-0 text-muted">The list below is loaded from your trained model labels.</p>
+                </div>
+
+                <div id="people-list" class="row g-3"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </section><!-- /Face Recognition Section -->
 
     
   </main>
