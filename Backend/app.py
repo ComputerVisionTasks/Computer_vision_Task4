@@ -11,6 +11,10 @@ import numpy as np
 from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
 from sklearn.metrics import accuracy_score, classification_report
+from segmentation import (
+    run_kmeans, run_region_growing, run_agglomerative, run_mean_shift,
+    encode_jpeg_b64 as encode_bgr_to_b64_jpeg,
+)
 
 warnings.filterwarnings('ignore')
 
@@ -183,7 +187,7 @@ def home() -> object:
 
 
 @app.route('/segmentation')
-def segmentation_placeholder() -> object:
+def segmentation_page() -> object:
     return send_from_directory(FRONTEND_DIR / 'pages', 'segmentation.html')
 
 
@@ -407,5 +411,129 @@ def _recognize_face_region(face_roi_gray: np.ndarray) -> tuple[str, float, float
     recognized = confidence > THRESHOLD
 
     return person_name, confidence, distance, recognized
+# ------------------------------------------------------------------ #
+#  Segmentation API helpers                                           #
+# ------------------------------------------------------------------ #
+
+def _load_seg_image() -> np.ndarray | None:
+    """Load BGR image from multipart upload or base64 JSON/form payload."""
+    if 'image' in request.files:
+        file_bytes = np.frombuffer(request.files['image'].read(), np.uint8)
+        return cv2.imdecode(file_bytes, cv2.IMREAD_COLOR)
+
+    image_data = None
+    if request.form.get('imageData'):
+        image_data = request.form.get('imageData')
+    elif request.is_json:
+        payload = request.get_json(silent=True) or {}
+        image_data = payload.get('imageData')
+
+    if not image_data:
+        return None
+
+    if image_data.startswith('data:image') and ',' in image_data:
+        image_data = image_data.split(',', 1)[1]
+
+    file_bytes = b64decode(image_data)
+    buf = np.frombuffer(file_bytes, np.uint8)
+    return cv2.imdecode(buf, cv2.IMREAD_COLOR)
+
+
+@app.route('/api/segment/kmeans', methods=['POST'])
+def segment_kmeans():
+    """K-Means segmentation on the L channel of LUV color space."""
+    image = _load_seg_image()
+    if image is None:
+        return jsonify({'success': False, 'error': 'No image provided'}), 400
+    try:
+        k = int(request.form.get('k') or (request.get_json(silent=True) or {}).get('k', 3))
+        max_iter = int(request.form.get('max_iter') or (request.get_json(silent=True) or {}).get('max_iter', 20))
+        k = max(2, min(k, 8))
+        result = run_kmeans(image, k=k, max_iter=max_iter)
+        return jsonify({
+            'success': True,
+            'result_image': encode_bgr_to_b64_jpeg(result['result_image']),
+            'elapsed_ms': result['elapsed_ms'],
+            'k': result['k'],
+        })
+    except Exception as exc:
+        return jsonify({'success': False, 'error': str(exc)}), 500
+
+
+@app.route('/api/segment/region-growing', methods=['POST'])
+def segment_region_growing():
+    """Region Growing segmentation from one or more user-supplied seed points."""
+    image = _load_seg_image()
+    if image is None:
+        return jsonify({'success': False, 'error': 'No image provided'}), 400
+    try:
+        payload = request.get_json(silent=True) or {}
+        # Accept seeds as a JSON array: [[x1,y1],[x2,y2],...]
+        seeds_raw = request.form.get('seeds') or payload.get('seeds')
+        if seeds_raw:
+            seeds = json.loads(seeds_raw) if isinstance(seeds_raw, str) else seeds_raw
+        else:
+            # Fallback: single seed from legacy x/y fields
+            sx = int(request.form.get('seed_x') or payload.get('seed_x', image.shape[1] // 2))
+            sy = int(request.form.get('seed_y') or payload.get('seed_y', image.shape[0] // 2))
+            seeds = [[sx, sy]]
+        if not seeds:
+            return jsonify({'success': False, 'error': 'No seed points provided'}), 400
+        threshold = int(request.form.get('threshold') or payload.get('threshold', 25))
+        threshold = max(1, min(threshold, 200))
+        result = run_region_growing(image, seeds=seeds, threshold=threshold)
+        return jsonify({
+            'success': True,
+            'result_image': encode_bgr_to_b64_jpeg(result['result_image']),
+            'elapsed_ms': result['elapsed_ms'],
+            'seeds': result['seeds'],
+            'threshold': result['threshold'],
+        })
+    except Exception as exc:
+        return jsonify({'success': False, 'error': str(exc)}), 500
+
+
+@app.route('/api/segment/agglomerative', methods=['POST'])
+def segment_agglomerative():
+    """Agglomerative Clustering segmentation (operates on a 20×20 downscale internally)."""
+    image = _load_seg_image()
+    if image is None:
+        return jsonify({'success': False, 'error': 'No image provided'}), 400
+    try:
+        payload = request.get_json(silent=True) or {}
+        n_clusters = int(request.form.get('n_clusters') or payload.get('n_clusters', 4))
+        n_clusters = max(2, min(n_clusters, 8))
+        result = run_agglomerative(image, n_clusters=n_clusters)
+        return jsonify({
+            'success': True,
+            'result_image': encode_bgr_to_b64_jpeg(result['result_image']),
+            'elapsed_ms': result['elapsed_ms'],
+            'n_clusters': result['n_clusters'],
+        })
+    except Exception as exc:
+        return jsonify({'success': False, 'error': str(exc)}), 500
+
+
+@app.route('/api/segment/meanshift', methods=['POST'])
+def segment_meanshift():
+    """Mean Shift segmentation on the L channel of LUV color space."""
+    image = _load_seg_image()
+    if image is None:
+        return jsonify({'success': False, 'error': 'No image provided'}), 400
+    try:
+        payload = request.get_json(silent=True) or {}
+        bandwidth = int(request.form.get('bandwidth') or payload.get('bandwidth', 20))
+        bandwidth = max(5, min(bandwidth, 100))
+        result = run_mean_shift(image, bandwidth=bandwidth)
+        return jsonify({
+            'success': True,
+            'result_image': encode_bgr_to_b64_jpeg(result['result_image']),
+            'elapsed_ms': result['elapsed_ms'],
+            'bandwidth': result['bandwidth'],
+        })
+    except Exception as exc:
+        return jsonify({'success': False, 'error': str(exc)}), 500
+
+
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
