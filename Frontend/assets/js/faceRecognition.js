@@ -34,8 +34,6 @@
   const cameraCaptureBtn = document.getElementById('camera-capture-btn');
 
   // Recognition elements
-  const recUploadArea = document.getElementById('rec-upload-area');
-  const recImageInput = document.getElementById('rec-image-input');
   const recPreviewWrap = document.getElementById('rec-preview-wrap');
   const recPreviewImage = document.getElementById('rec-preview-image');
   const recClearBtn = document.getElementById('rec-clear-btn');
@@ -48,6 +46,7 @@
   const recConfidencePct = document.getElementById('rec-confidence-pct');
   const recConfBar = document.getElementById('rec-conf-bar');
   const recDistance = document.getElementById('rec-distance');
+  const recInferenceTime = document.getElementById('rec-inference-time');
 
   // Metrics & People
   const peopleList = document.getElementById('people-list');
@@ -74,8 +73,8 @@
   });
 
   // ── Utility Functions ─────────────────────────
-  function show(el) { el.classList.remove('d-none'); }
-  function hide(el) { el.classList.add('d-none'); }
+  function show(el) { if (el) el.classList.remove('d-none'); }
+  function hide(el) { if (el) el.classList.add('d-none'); }
   function resetError(container, msgEl) {
     hide(container);
     if (msgEl) msgEl.textContent = '';
@@ -185,6 +184,7 @@
     reader.readAsDataURL(file);
 
     runDetection(file);
+    runRecognition(file);
   }
 
   // Detection upload handlers
@@ -232,9 +232,6 @@
     }
   });
 
-  // ── Recognition Logic ─────────────────────────
-  let lastRecognitionFile = null;
-
   async function runRecognition(file) {
     hide(recError);
     hide(recResult);
@@ -255,6 +252,9 @@
       recConfidencePct.textContent = `${Math.round(data.confidence)}%`;
       recConfBar.style.width = `${Math.round(data.confidence)}%`;
       recDistance.textContent = data.distance.toFixed(4);
+      if (recInferenceTime) {
+        recInferenceTime.textContent = `${Number(data.inference_time_ms || 0).toFixed(2)} ms`;
+      }
       recResultAvatar.textContent = data.person.charAt(0).toUpperCase();
     } catch (err) {
       hide(recLoading);
@@ -262,52 +262,13 @@
     }
   }
 
-  function handleRecognitionFile(file) {
-    lastRecognitionFile = file;
-
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      recPreviewImage.src = e.target.result;
-      show(recPreviewWrap);
-      hide(recUploadArea);
-    };
-    reader.readAsDataURL(file);
-
-    runRecognition(file);
+  if (recClearBtn) {
+    recClearBtn.addEventListener('click', () => {
+      hide(recPreviewWrap);
+      hide(recResult);
+      hide(recError);
+    });
   }
-
-  recUploadArea.addEventListener('click', () => recImageInput.click());
-  recImageInput.addEventListener('change', (e) => {
-    const file = e.target.files[0];
-    if (file) handleRecognitionFile(file);
-  });
-
-  recUploadArea.addEventListener('dragover', (e) => {
-    e.preventDefault();
-    recUploadArea.classList.add('dragover');
-  });
-  recUploadArea.addEventListener('dragleave', () => {
-    recUploadArea.classList.remove('dragover');
-  });
-  recUploadArea.addEventListener('drop', (e) => {
-    e.preventDefault();
-    recUploadArea.classList.remove('dragover');
-    const file = e.dataTransfer.files[0];
-    if (file && file.type.startsWith('image/')) {
-      handleRecognitionFile(file);
-    } else {
-      showError(recError, recErrorMsg, 'Please drop a valid face image.');
-    }
-  });
-
-  recClearBtn.addEventListener('click', () => {
-    lastRecognitionFile = null;
-    recImageInput.value = '';
-    hide(recPreviewWrap);
-    show(recUploadArea);
-    hide(recResult);
-    hide(recError);
-  });
 
   // ── Load Model Metrics ────────────────────────
   async function loadMetrics() {
@@ -339,9 +300,6 @@
             <td>${metric.label}</td>
             <td>${metric.samples}</td>
             <td><span class="badge bg-${colorClass}">${percent}%</span></td>
-            <td>
-              <div class="fr-acc-bar-wrap"><div class="fr-acc-bar" style="width:${percent}%"></div></div>
-            </td>
           `;
           tableBody.appendChild(row);
         });

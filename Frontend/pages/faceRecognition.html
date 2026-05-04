@@ -45,21 +45,7 @@
     <section class="fr-main-section section">
       <div class="container">
 
-        <!-- Tab Nav -->
-        <div class="fr-tab-nav" data-aos="fade-up">
-          <button class="fr-tab-btn active" data-tab="detection">
-            <i class="bi bi-camera-fill"></i>
-            <span>Face Detection</span>
-            <small>Locate &amp; highlight faces</small>
-          </button>
-          <button class="fr-tab-btn" data-tab="recognition">
-            <i class="bi bi-person-badge-fill"></i>
-            <span>Face Recognition</span>
-            <small>Identify via PCA / Eigenfaces</small>
-          </button>
-        </div>
-
-        <!-- TAB 1 – DETECTION -->
+        <!-- DETECTION -->
         <div id="tab-detection" class="fr-tab-panel active" data-aos="fade-up" data-aos-delay="100">
           <div class="row g-4 align-items-stretch">
 
@@ -184,72 +170,24 @@
             </div>
           </div>
 
-          <!-- Detection Info Cards -->
-          <div class="row g-3 mt-2">
-            <div class="col-md-4">
-              <div class="fr-info-card">
-                <i class="bi bi-layers-fill"></i>
-                <div>
-                  <strong>Haar Cascade</strong>
-                  <p>Viola-Jones algorithm — fast, real-time face detection using pre-trained cascade classifiers.</p>
-                </div>
-              </div>
-            </div>
-            <div class="col-md-4">
-              <div class="fr-info-card">
-                <i class="bi bi-palette2"></i>
-                <div>
-                  <strong>Color &amp; Grayscale</strong>
-                  <p>Automatically converts color images to grayscale for optimal detection while preserving originals.</p>
-                </div>
-              </div>
-            </div>
-            <div class="col-md-4">
-              <div class="fr-info-card">
-                <i class="bi bi-bounding-box"></i>
-                <div>
-                  <strong>Bounding Boxes</strong>
-                  <p>Returns pixel coordinates (x, y, w, h) for every detected face region in the image.</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+  
+        
 
-        <!-- TAB 2 – RECOGNITION -->
-        <div id="tab-recognition" class="fr-tab-panel" data-aos="fade-up" data-aos-delay="100">
+        <!-- RECOGNITION -->
+        <div id="tab-recognition" class="fr-tab-panel active mt-5" data-aos="fade-up" data-aos-delay="100">
           <div class="row g-4 align-items-stretch">
 
-            <!-- Upload card -->
+            <!-- Result card -->
             <div class="col-lg-7">
               <div class="fr-card h-100">
                 <div class="fr-card-header">
                   <i class="bi bi-person-bounding-box"></i>
                   <div>
                     <h3>Recognize Face</h3>
-                    <p>Upload a cropped face — PCA/KNN will identify the person</p>
+                    <p>Uses the same uploaded image from detection — no second upload needed</p>
                   </div>
                 </div>
                 <div class="fr-card-body">
-
-                  <!-- Dropzone -->
-                  <div id="rec-upload-area" class="fr-dropzone">
-                    <div class="fr-dropzone-inner">
-                      <div class="fr-dropzone-icon"><i class="bi bi-person-circle"></i></div>
-                      <h4>Drop a face photo here</h4>
-                      <p>or <span class="fr-link">browse files</span></p>
-                      <div class="fr-dropzone-hint"><i class="bi bi-info-circle"></i> Best results with a single, forward-facing face</div>
-                    </div>
-                    <input id="rec-image-input" type="file" accept="image/*" hidden>
-                  </div>
-
-                  <!-- Preview -->
-                  <div id="rec-preview-wrap" class="d-none">
-                    <img id="rec-preview-image" class="fr-preview-single" alt="Selected face">
-                    <div class="d-flex gap-2 mt-3 flex-wrap">
-                      <button id="rec-clear-btn" type="button" class="fr-btn fr-btn-ghost"><i class="bi bi-x-circle"></i> Clear</button>
-                    </div>
-                  </div>
 
                   <!-- Loading -->
                   <div id="rec-loading" class="fr-status-box d-none">
@@ -280,7 +218,8 @@
                         <div class="fr-progress-track">
                           <div class="fr-progress-fill" id="rec-conf-bar" style="width: 0%"></div>
                         </div>
-                        <small class="text-muted">PCA distance: <span id="rec-distance">–</span></small>
+                        <small class="text-muted d-block mt-2">PCA distance: <span id="rec-distance">–</span></small>
+                        <small class="text-muted d-block">Inference time: <span id="rec-inference-time">–</span></small>
                       </div>
                     </div>
                   </div>
@@ -346,29 +285,33 @@
                   </div>
                 </div>
               </div>
-              <!-- Per-class table -->
-              <div class="fr-card">
-                <div class="fr-card-header">
-                  <i class="bi bi-table"></i>
-                  <div><h3>Per-Class Accuracy</h3><p>Recognition performance for each individual</p></div>
-                </div>
-                <div class="fr-card-body p-0">
-                  <div class="table-responsive">
-                    <table class="table fr-table mb-0">
-                      <thead>
-                        <tr><th>#</th><th>Person</th><th>Test Samples</th><th>Accuracy</th><th>Bar</th></tr>
-                      </thead>
-                      <tbody id="class-metrics-table">
-                        <tr><td colspan="5" class="text-center text-muted py-3">Loading…</td></tr>
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
+
+          <div class="fr-card mt-4">
+            <div class="fr-card-header">
+              <i class="bi bi-table"></i>
+              <div>
+                <h3>Per-Class Accuracy</h3>
+                <p>Recognition performance for each individual person</p>
               </div>
             </div>
-            <div id="metrics-error" style="display:none;">
-              <div class="fr-alert fr-alert-warning">
-                <i class="bi bi-exclamation-circle"></i>
+            <div class="fr-card-body p-0">
+              <div class="table-responsive">
+                <table class="table fr-table mb-0">
+                  <thead>
+                    <tr>
+                      <th>Person</th>
+                      <th>Test Samples</th>
+                      <th>Accuracy</th>
+                    </tr>
+                  </thead>
+                  <tbody id="class-metrics-table">
+                    <tr><td colspan="3" class="text-center text-muted py-3">Loading…</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
                 <span id="metrics-error-text">Could not load model metrics. Make sure the Flask backend is running.</span>
               </div>
             </div>

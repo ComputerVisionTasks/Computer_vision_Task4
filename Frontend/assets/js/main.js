@@ -338,6 +338,7 @@
     const classMetricsError = document.getElementById('class-metrics-error');
 
     if (!metricsLoading || !metricsContent) return;
+    if (!document.getElementById('class-metrics-table')) return;
 
     fetch('/api/model-metrics')
       .then(response => response.json())

@@ -5,6 +5,7 @@ from pathlib import Path
 import pickle
 import warnings
 import base64
+import time
 import cv2
 import numpy as np
 from flask import Flask, jsonify, request, send_from_directory
@@ -92,8 +93,21 @@ def _predict_person(image: np.ndarray) -> tuple[str, float, float]:
         distances, _ = knn_model.kneighbors(pca_features, n_neighbors=1)
         distance = float(distances[0][0])
 
-    confidence = max(0.0, min(100.0, 100.0 - distance * 50.0))
+    confidence = _confidence_from_features(pca_features, predicted_label, distance)
     return person_name, confidence, distance
+
+
+def _confidence_from_features(pca_features: np.ndarray, predicted_label: int, distance: float = 0.0) -> float:
+    """Return a stable confidence score for the predicted label."""
+    if hasattr(knn_model, 'predict_proba'):
+        probabilities = knn_model.predict_proba(pca_features)[0]
+        classes = getattr(knn_model, 'classes_', [])
+        if len(classes) > 0:
+            class_index = int(np.where(classes == predicted_label)[0][0]) if predicted_label in classes else int(np.argmax(probabilities))
+            return float(np.clip(probabilities[class_index] * 100.0, 0.0, 100.0))
+
+    # Fallback for classifiers without probability estimates.
+    return float(np.clip((1.0 / (1.0 + distance)) * 100.0, 0.0, 100.0))
 
 
 def _compute_model_metrics() -> dict:
@@ -185,13 +199,16 @@ def recognize_face() -> object:
         return jsonify({'success': False, 'error': 'No image provided'}), 400
 
     try:
+        started_at = time.perf_counter()
         person_name, confidence, distance = _predict_person(image)
+        inference_time_ms = (time.perf_counter() - started_at) * 1000.0
         return jsonify(
             {
                 'success': True,
                 'person': person_name,
                 'confidence': round(confidence, 2),
                 'distance': round(distance, 4),
+                'inference_time_ms': round(inference_time_ms, 2),
             }
         )
     except Exception as exc:
@@ -245,7 +262,7 @@ def detect_faces():
         # Draw rectangles on a copy of the original image
         result_img = image.copy()
         for (x, y, w, h) in faces:
-            cv2.rectangle(result_img, (x, y), (x + w, y + h), (65, 84, 241), 5)
+            cv2.rectangle(result_img, (x, y), (x + w, y + h), (255, 0, 0), 5)
 
         # Encode result image to base64
         _, buffer = cv2.imencode('.jpg', result_img)
@@ -304,7 +321,7 @@ def detect_and_recognize():
             person_name, confidence, distance, recognized = _recognize_face_region(face_roi)
 
             # Draw bounding box and label
-            color = (65, 84, 241) if recognized else (220, 53, 69)   # blue if known, red if unknown
+            color = (255, 0, 0)
             cv2.rectangle(result_img, (x, y), (x + w, y + h), color, 2)
             label = f"{person_name} ({confidence:.0f}%)" if recognized else "Unknown"
             cv2.putText(result_img, label, (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX,
@@ -383,7 +400,7 @@ def _recognize_face_region(face_roi_gray: np.ndarray) -> tuple[str, float, float
     # Distance and confidence
     distances, _ = knn_model.kneighbors(pca_features, n_neighbors=1)
     distance = float(distances[0][0])
-    confidence = max(0.0, min(100.0, 100.0 - distance * 50.0))
+    confidence = _confidence_from_features(pca_features, predicted_label, distance)
 
     # Threshold – adjust this value based on your dataset
     THRESHOLD = 50.0  # lower if too many known faces become Unknown
