@@ -173,6 +173,11 @@ def segmentation_placeholder() -> object:
     return send_from_directory(FRONTEND_DIR / 'pages', 'segmentation.html')
 
 
+@app.route('/faceRecognition')
+def face_recognition_page() -> object:
+    return send_from_directory(FRONTEND_DIR / 'pages', 'faceRecognition.html')
+
+
 @app.route('/api/recognize', methods=['POST'])
 def recognize_face() -> object:
     image = _load_image_from_request()

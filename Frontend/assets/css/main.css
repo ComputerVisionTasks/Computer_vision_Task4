@@ -2860,3 +2860,79 @@ section,
   color: color-mix(in srgb, var(--default-color), transparent 60%);
   font-size: 14px;
 }
+
+
+ /* ===== Additional project-specific styles ===== */
+    .metrics-card {
+      background: var(--surface-color);
+      border-radius: 1rem;
+      transition: all 0.25s ease;
+      border: 1px solid color-mix(in srgb, var(--accent-color), transparent 92%);
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.03);
+    }
+    .metrics-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 20px 30px -12px rgba(65, 84, 241, 0.12);
+      border-color: color-mix(in srgb, var(--accent-color), transparent 70%);
+    }
+    .badge-metrics {
+      font-size: 0.75rem;
+      font-weight: 500;
+      padding: 0.3rem 0.8rem;
+      border-radius: 40px;
+    }
+    .class-table th {
+      background: color-mix(in srgb, var(--accent-color), transparent 92%);
+      font-weight: 600;
+    }
+    .tech-tag {
+      background: color-mix(in srgb, var(--accent-color), transparent 92%);
+      color: var(--accent-color);
+      border-radius: 30px;
+      padding: 0.25rem 0.9rem;
+      font-size: 0.75rem;
+      font-weight: 500;
+      display: inline-block;
+    }
+    .segmentation-method {
+      background: var(--surface-color);
+      border-left: 3px solid var(--accent-color);
+      transition: 0.2s;
+    }
+    .segmentation-method:hover {
+      background: color-mix(in srgb, var(--accent-color), transparent 96%);
+    }
+    .stats-item {
+      transition: transform 0.2s;
+    }
+    .stats-item:hover {
+      transform: translateY(-5px);
+    }
+    .hero-bg-accent {
+      background: radial-gradient(circle at 10% 20%, rgba(65,84,241,0.03) 0%, rgba(255,255,255,0) 70%);
+    }
+    .btn-soft-primary {
+      background: color-mix(in srgb, var(--accent-color), transparent 90%);
+      color: var(--accent-color);
+      border-radius: 40px;
+      padding: 0.5rem 1.2rem;
+      font-weight: 500;
+      transition: 0.2s;
+    }
+    .btn-soft-primary:hover {
+      background: var(--accent-color);
+      color: white;
+    }
+    .model-info-text {
+      font-size: 0.9rem;
+      background: var(--background-color);
+      padding: 0.5rem 1rem;
+      border-radius: 14px;
+    }
+    @keyframes fadeSlideUp {
+      from { opacity: 0; transform: translateY(20px);}
+      to { opacity: 1; transform: translateY(0);}
+    }
+    .metrics-content {
+      animation: fadeSlideUp 0.4s ease-out;
+    }

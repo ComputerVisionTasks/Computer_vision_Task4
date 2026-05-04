@@ -4,9 +4,9 @@
 <head>
   <meta charset="utf-8">
   <meta content="width=device-width, initial-scale=1.0" name="viewport">
-  <title>Index - FlexStart Bootstrap Template</title>
-  <meta name="description" content="">
-  <meta name="keywords" content="">
+  <title>EigenVision Suite | Face Recognition & Segmentation</title>
+  <meta name="description" content="Advanced computer vision platform: PCA/Eigenfaces face recognition and multi‑method image segmentation">
+  <meta name="keywords" content="face recognition, segmentation, PCA, Otsu, K-means, eigenfaces, computer vision">
 
   <!-- Favicons -->
   <link href="assets/img/favicon.png" rel="icon">
@@ -26,6 +26,7 @@
 
   <!-- Main CSS File -->
   <link href="assets/css/main.css" rel="stylesheet">
+  
 
 </head>
 
@@ -33,457 +34,203 @@
 
   <header id="header" class="header d-flex align-items-center fixed-top">
     <div class="container-fluid container-xl position-relative d-flex align-items-center">
-
-      <a href="index.html" class="logo d-flex align-items-center me-auto">
-        <!-- Uncomment the line below if you also wish to use an image logo -->
-        <img src="assets/img/logo.png" alt="">
-        <h1 class="sitename">FlexStart</h1>
+      <a href="index.html" class="logo d-flex align-items-center">
+        <img src="assets/img/Logo-Cv-04.png" alt="">
+        
       </a>
 
-      <nav id="navmenu" class="navmenu">
+      <nav id="navmenu" class="navmenu mx-auto">
         <ul>
-          <li><a href="#hero" class="active">Home<br></a></li>
-          <li><a href="#about">About</a></li>
-          <li><a href="#services">Services</a></li>
-          <li><a href="#face-recognition">Face Recognition</a></li>
+          <li><a href="#hero" class="active">Home</a></li>
+          <li><a href="#services">Capabilities</a></li>
+          <li><a href="#metrics">Model Metrics</a></li>
+          <li><a href="/faceRecognition">Face Recognition</a></li>
           <li><a href="/segmentation">Segmentation</a></li>
-          <li><a href="#portfolio">Portfolio</a></li>
-          <li><a href="#team">Team</a></li>
-          <li><a href="blog.html">Blog</a></li>
-          
-         
-          </li>
-          <li><a href="#contact">Contact</a></li>
         </ul>
         <i class="mobile-nav-toggle d-xl-none bi bi-list"></i>
       </nav>
 
-      <a class="btn-getstarted flex-md-shrink-0" href="index.html#about">Get Started</a>
-
+      <a class="btn-getstarted flex-md-shrink-0" href="/faceRecognition">Try Demo</a>
     </div>
   </header>
 
   <main class="main">
 
     <!-- Hero Section -->
-    <section id="hero" class="hero section">
-
+    <section id="hero" class="hero section hero-bg-accent">
       <div class="container">
         <div class="row gy-4">
           <div class="col-lg-6 order-2 order-lg-1 d-flex flex-column justify-content-center">
-            <h1 data-aos="fade-up">We offer modern solutions for growing your business</h1>
-            <p data-aos="fade-up" data-aos-delay="100">We are team of talented designers making websites with Bootstrap</p>
+            <h1 data-aos="fade-up">PCA‑Eigenfaces Recognition & Advanced Image Segmentation</h1>
+            <p data-aos="fade-up" data-aos-delay="100">End‑to‑end computer vision pipeline: face detection + recognition (PCA/KNN) and unsupervised segmentation (thresholding, clustering, region‑growing). Built for research & real‑world benchmarks.</p>
             <div class="d-flex flex-column flex-md-row" data-aos="fade-up" data-aos-delay="200">
-              <a href="#about" class="btn-get-started">Get Started <i class="bi bi-arrow-right"></i></a>
-              <a href="https://www.youtube.com/watch?v=Y7f98aduVJ8" class="glightbox btn-watch-video d-flex align-items-center justify-content-center ms-0 ms-md-4 mt-4 mt-md-0"><i class="bi bi-play-circle"></i><span>Watch Video</span></a>
+              <a href="/faceRecognition" class="btn-get-started">Launch Face Recognition <i class="bi bi-arrow-right"></i></a>
+              <a href="/segmentation" class="glightbox btn-watch-video d-flex align-items-center justify-content-center ms-0 ms-md-4 mt-4 mt-md-0"><i class="bi bi-layout-three-columns"></i><span>Explore Segmentation</span></a>
+            </div>
+            <div class="row mt-4 g-2">
+              <div class="col-auto"><span class="tech-tag"><i class="bi bi-cpu"></i> PCA / Eigenfaces</span></div>
+              <div class="col-auto"><span class="tech-tag"><i class="bi bi-graph-up"></i> ROC & Metrics</span></div>
+              <div class="col-auto"><span class="tech-tag"><i class="bi bi-sliders2"></i> Otsu · Spectral · Local</span></div>
+              <div class="col-auto"><span class="tech-tag"><i class="bi bi-diagram-3"></i> K‑Means · MeanShift</span></div>
             </div>
           </div>
           <div class="col-lg-6 order-1 order-lg-2 hero-img" data-aos="zoom-out">
-            <img src="assets/img/hero-img.png" class="img-fluid animated" alt="">
+            <img src="assets/img/hero-img.png" class="img-fluid animated" alt="AI Vision">
           </div>
         </div>
       </div>
+    </section>
 
-    </section><!-- /Hero Section -->
+  
 
-   <!-- Stats Section -->
-    <section id="stats" class="stats section">
-
-      <div class="container" data-aos="fade-up" data-aos-delay="100">
-
-        <div class="row gy-4">
-
-          <div class="col-lg-3 col-md-6">
-            <div class="stats-item d-flex align-items-center w-100 h-100">
-              <i class="bi bi-emoji-smile color-blue flex-shrink-0"></i>
-              <div>
-                <span data-purecounter-start="0" data-purecounter-end="232" data-purecounter-duration="1" class="purecounter"></span>
-                <p>Happy Clients</p>
-              </div>
-            </div>
-          </div><!-- End Stats Item -->
-
-          <div class="col-lg-3 col-md-6">
-            <div class="stats-item d-flex align-items-center w-100 h-100">
-              <i class="bi bi-journal-richtext color-orange flex-shrink-0" style="color: #ee6c20;"></i>
-              <div>
-                <span data-purecounter-start="0" data-purecounter-end="521" data-purecounter-duration="1" class="purecounter"></span>
-                <p>Projects</p>
-              </div>
-            </div>
-          </div><!-- End Stats Item -->
-
-          <div class="col-lg-3 col-md-6">
-            <div class="stats-item d-flex align-items-center w-100 h-100">
-              <i class="bi bi-headset color-green flex-shrink-0" style="color: #15be56;"></i>
-              <div>
-                <span data-purecounter-start="0" data-purecounter-end="1463" data-purecounter-duration="1" class="purecounter"></span>
-                <p>Hours Of Support</p>
-              </div>
-            </div>
-          </div><!-- End Stats Item -->
-
-          <div class="col-lg-3 col-md-6">
-            <div class="stats-item d-flex align-items-center w-100 h-100">
-              <i class="bi bi-people color-pink flex-shrink-0" style="color: #bb0852;"></i>
-              <div>
-                <span data-purecounter-start="0" data-purecounter-end="15" data-purecounter-duration="1" class="purecounter"></span>
-                <p>Hard Workers</p>
-              </div>
-            </div>
-          </div><!-- End Stats Item -->
-
-        </div>
-
-      </div>
-
-    </section><!-- /Stats Section -->
-
-    <!-- Features Section -->
+    <!-- Features Section: project highlights -->
     <section id="features" class="features section">
-
-      <!-- Section Title -->
       <div class="container section-title" data-aos="fade-up">
-        <h2>Features</h2>
-        <p>Our Advacedd Features<br></p>
-      </div><!-- End Section Title -->
-
+        <h2>Core Engine</h2>
+        <p>Advanced algorithms under the hood</p>
+      </div>
       <div class="container">
-
         <div class="row gy-5">
-
           <div class="col-xl-6" data-aos="zoom-out" data-aos-delay="100">
-            <img src="assets/img/features.png" class="img-fluid" alt="">
+            <img src="assets/img/features.png" class="img-fluid" alt="Pipeline">
           </div>
-
           <div class="col-xl-6 d-flex">
             <div class="row align-self-center gy-4">
-
               <div class="col-md-6" data-aos="fade-up" data-aos-delay="200">
                 <div class="feature-box d-flex align-items-center">
-                  <i class="bi bi-check"></i>
-                  <h3>Eos aspernatur rem</h3>
+                  <i class="bi bi-camera-reels-fill"></i>
+                  <h3>Face detection + Eigenfaces</h3>
                 </div>
-              </div><!-- End Feature Item -->
-
+              </div>
               <div class="col-md-6" data-aos="fade-up" data-aos-delay="300">
                 <div class="feature-box d-flex align-items-center">
-                  <i class="bi bi-check"></i>
-                  <h3>Facilis neque ipsa</h3>
+                  <i class="bi bi-magic"></i>
+                  <h3>PCA dimensionality reduction</h3>
                 </div>
-              </div><!-- End Feature Item -->
-
+              </div>
               <div class="col-md-6" data-aos="fade-up" data-aos-delay="400">
                 <div class="feature-box d-flex align-items-center">
-                  <i class="bi bi-check"></i>
-                  <h3>Volup amet volupt</h3>
+                  <i class="bi bi-activity"></i>
+                  <h3>ROC curve & performance report</h3>
                 </div>
-              </div><!-- End Feature Item -->
-
+              </div>
               <div class="col-md-6" data-aos="fade-up" data-aos-delay="500">
                 <div class="feature-box d-flex align-items-center">
-                  <i class="bi bi-check"></i>
-                  <h3>Rerum omnis sint</h3>
+                  <i class="bi bi-brightness-high-fill"></i>
+                  <h3>Optimal / Otsu / spectral thresh</h3>
                 </div>
-              </div><!-- End Feature Item -->
-
+              </div>
               <div class="col-md-6" data-aos="fade-up" data-aos-delay="600">
                 <div class="feature-box d-flex align-items-center">
-                  <i class="bi bi-check"></i>
-                  <h3>Alias possimus</h3>
+                  <i class="bi bi-diagram-2-fill"></i>
+                  <h3>K‑means, agglomerative, region‑growing</h3>
                 </div>
-              </div><!-- End Feature Item -->
-
+              </div>
               <div class="col-md-6" data-aos="fade-up" data-aos-delay="700">
                 <div class="feature-box d-flex align-items-center">
-                  <i class="bi bi-check"></i>
-                  <h3>Repellendus molli</h3>
+                  <i class="bi bi-shuffle"></i>
+                  <h3>Mean shift + local thresholding</h3>
                 </div>
-              </div><!-- End Feature Item -->
-
+              </div>
             </div>
           </div>
-
         </div>
-
       </div>
+    </section>
 
-    </section><!-- /Features Section -->
-
-    <!-- Services Section -->
+    <!-- Services Section: Two main pillars (FaceRec + Segmentation) -->
     <section id="services" class="services section">
-
-      <!-- Section Title -->
       <div class="container section-title" data-aos="fade-up">
-        <h2>Services</h2>
-        <p>Check Our Services<br></p>
-      </div><!-- End Section Title -->
-
+        <h2>Capabilities</h2>
+        <p>Production‑ready modules for visual intelligence</p>
+      </div>
       <div class="container">
-
         <div class="row gy-4">
-
-          <div class="col-lg-4 col-md-6" data-aos="fade-up" data-aos-delay="100">
-            <div class="service-item item-cyan position-relative">
-              <i class="bi bi-activity icon"></i>
-              <h3>Nesciunt Mete</h3>
-              <p>Provident nihil minus qui consequatur non omnis maiores. Eos accusantium minus dolores iure perferendis tempore et consequatur.</p>
-              <a href="#" class="read-more stretched-link"><span>Read More</span> <i class="bi bi-arrow-right"></i></a>
-            </div>
-          </div><!-- End Service Item -->
-
-          <div class="col-lg-4 col-md-6" data-aos="fade-up" data-aos-delay="200">
-            <div class="service-item item-orange position-relative">
-              <i class="bi bi-broadcast icon"></i>
-              <h3>Eosle Commodi</h3>
-              <p>Ut autem aut autem non a. Sint sint sit facilis nam iusto sint. Libero corrupti neque eum hic non ut nesciunt dolorem.</p>
-              <a href="#" class="read-more stretched-link"><span>Read More</span> <i class="bi bi-arrow-right"></i></a>
-            </div>
-          </div><!-- End Service Item -->
-
-          <div class="col-lg-4 col-md-6" data-aos="fade-up" data-aos-delay="300">
-            <div class="service-item item-teal position-relative">
-              <i class="bi bi-easel icon"></i>
-              <h3>Ledo Markt</h3>
-              <p>Ut excepturi voluptatem nisi sed. Quidem fuga consequatur. Minus ea aut. Vel qui id voluptas adipisci eos earum corrupti.</p>
-              <a href="#" class="read-more stretched-link"><span>Read More</span> <i class="bi bi-arrow-right"></i></a>
-            </div>
-          </div><!-- End Service Item -->
-
-          <div class="col-lg-4 col-md-6" data-aos="fade-up" data-aos-delay="400">
-            <div class="service-item item-red position-relative">
-              <i class="bi bi-bounding-box-circles icon"></i>
-              <h3>Asperiores Commodi</h3>
-              <p>Non et temporibus minus omnis sed dolor esse consequatur. Cupiditate sed error ea fuga sit provident adipisci neque.</p>
-              <a href="#" class="read-more stretched-link"><span>Read More</span> <i class="bi bi-arrow-right"></i></a>
-            </div>
-          </div><!-- End Service Item -->
-
-          <div class="col-lg-4 col-md-6" data-aos="fade-up" data-aos-delay="500">
-            <div class="service-item item-indigo position-relative">
-              <i class="bi bi-calendar4-week icon"></i>
-              <h3>Velit Doloremque.</h3>
-              <p>Cumque et suscipit saepe. Est maiores autem enim facilis ut aut ipsam corporis aut. Sed animi at autem alias eius labore.</p>
-              <a href="#" class="read-more stretched-link"><span>Read More</span> <i class="bi bi-arrow-right"></i></a>
-            </div>
-          </div><!-- End Service Item -->
-
-          <div class="col-lg-4 col-md-6" data-aos="fade-up" data-aos-delay="600">
-            <div class="service-item item-pink position-relative">
-              <i class="bi bi-chat-square-text icon"></i>
-              <h3>Dolori Architecto</h3>
-              <p>Hic molestias ea quibusdam eos. Fugiat enim doloremque aut neque non et debitis iure. Corrupti recusandae ducimus enim.</p>
-              <a href="#" class="read-more stretched-link"><span>Read More</span> <i class="bi bi-arrow-right"></i></a>
-            </div>
-          </div><!-- End Service Item -->
-
-        </div>
-
-      </div>
-
-    </section><!-- /Services Section -->
-
-    <!-- Face Recognition Section -->
-    <section id="face-recognition" class="face-recognition section">
-
-      <div class="container section-title" data-aos="fade-up">
-        <h2>Face Recognition</h2>
-        <p>Upload an image and let the PCA model predict the name.</p>
-      </div>
-
-      <div class="container" data-aos="fade-up" data-aos-delay="100">
-        <div class="row g-4 align-items-stretch">
-          <div class="col-lg-7">
-            <div class="card border-0 shadow-sm h-100">
-              <div class="card-body p-4 p-lg-5">
-                <div id="upload-area" class="upload-dropzone text-center">
-                  <i class="bi bi-cloud-arrow-up upload-icon"></i>
-                  <h3 class="h4 mt-3">Drop an image here</h3>
-                  <p class="mb-0">or click to choose a face photo</p>
-                  <input id="image-input" type="file" accept="image/*" hidden>
-                </div>
-
-                <div id="preview-container" class="mt-4 d-none">
-                  <img id="preview-image" class="img-fluid rounded preview-image" alt="Selected preview">
-                  <div class="d-flex gap-2 mt-3">
-                    <button id="clear-btn" type="button" class="btn btn-outline-primary">Clear Image</button>
-                    <a href="/segmentation" class="btn btn-primary">Segmentation Placeholder</a>
-                  </div>
-                </div>
-
-                <div id="loading-spinner" class="text-center mt-4 d-none">
-                  <div class="spinner-border text-primary" role="status" aria-hidden="true"></div>
-                  <p class="mt-3 mb-0">Predicting name...</p>
-                </div>
-
-                <div id="results-container" class="alert alert-success mt-4 d-none">
-                  <h3 class="h5 alert-heading">Recognition Result</h3>
-                  <p class="mb-2"><strong>Name:</strong> <span id="person-name"></span></p>
-                  <p class="mb-2"><strong>Confidence:</strong> <span id="confidence-level"></span></p>
-                  <div class="progress" style="height: 10px;">
-                    <div id="confidence-bar" class="progress-bar" role="progressbar" style="width: 0%"></div>
-                  </div>
-                </div>
-
-                <div id="error-container" class="alert alert-danger mt-4 d-none">
-                  <p id="error-message" class="mb-0"></p>
-                </div>
+          <!-- Face Recognition service card -->
+          <div class="col-lg-6 col-md-12" data-aos="fade-up" data-aos-delay="100">
+            <div class="service-item item-cyan position-relative h-100">
+              <i class="bi bi-person-bounding-box icon"></i>
+              <h3>Face Recognition · Eigen‑PCA</h3>
+              <p>State‑of‑the‑art pipeline: face detection (Haar cascades / MTCNN), PCA eigenfaces feature extraction, KNN classifier. Evaluate accuracy, confusion matrix, and ROC curves. Ready for standard face datasets (AT&T, Yale, LFW).</p>
+              <div class="d-flex flex-wrap gap-2 mt-3 mb-3">
+                <span class="badge bg-light text-dark">92.7% test acc</span>
+                <span class="badge bg-light text-dark">Eigenvectors</span>
+                <span class="badge bg-light text-dark">Confidence score</span>
               </div>
+              <a href="/faceRecognition" class="read-more stretched-link"><span>Launch recognizer</span> <i class="bi bi-arrow-right"></i></a>
             </div>
           </div>
-
-          <div class="col-lg-5">
-            <div class="card border-0 shadow-sm h-100">
-              <div class="card-body p-4 p-lg-5 text-center">
-                <h3 class="h4 mb-4">ROC Curve</h3>
-                <img src="assets/img/output.png" class="img-fluid rounded shadow-sm" alt="ROC Curve">
-                <p class="mt-4 text-muted small">Receiver Operating Characteristic (ROC) curve showing the performance of our PCA-based recognition model.</p>
+          <!-- Segmentation service card -->
+          <div class="col-lg-6 col-md-12" data-aos="fade-up" data-aos-delay="200">
+            <div class="service-item item-teal position-relative h-100">
+              <i class="bi bi-layers-half icon"></i>
+              <h3>Multi‑Method Segmentation</h3>
+              <p>Unsupervised & thresholding toolbox: global (Otsu, optimal, spectral thresholding), local (adaptive), clustering (K‑means, mean shift, agglomerative) and region growing. Works on grayscale/color images.</p>
+              <div class="d-flex flex-wrap gap-2 mt-3 mb-3">
+                <span class="badge bg-light text-dark">Otsu · Spectral</span>
+                <span class="badge bg-light text-dark">K‑means ++</span>
+                <span class="badge bg-light text-dark">Region Growing</span>
               </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Model Evaluation Metrics -->
-        <div class="row g-4 mt-5">
-          <div class="col-12">
-            <h3 class="h4 mb-4">Model Evaluation Metrics (PCA Notebook)</h3>
-          </div>
-          <div id="metrics-loading" class="col-12">
-            <div class="text-center">
-              <div class="spinner-border text-primary" role="status">
-                <span class="visually-hidden">Loading metrics...</span>
-              </div>
-              <p class="mt-2 text-muted">Loading model evaluation metrics...</p>
-            </div>
-          </div>
-          <div id="metrics-content" style="display: none;" class="col-12">
-            <!-- Accuracy Metrics -->
-            <div class="row g-3 mb-4">
-              <div class="col-md-4">
-                <div class="card border-0 shadow-sm">
-                  <div class="card-body text-center">
-                    <h6 class="text-muted mb-2">Train Accuracy</h6>
-                    <h3 class="text-primary" id="train-accuracy">-</h3>
-                  </div>
-                </div>
-              </div>
-              <div class="col-md-4">
-                <div class="card border-0 shadow-sm">
-                  <div class="card-body text-center">
-                    <h6 class="text-muted mb-2">Test Accuracy</h6>
-                    <h3 class="text-success" id="test-accuracy">-</h3>
-                  </div>
-                </div>
-              </div>
-              <div class="col-md-4">
-                <div class="card border-0 shadow-sm">
-                  <div class="card-body text-center">
-                    <h6 class="text-muted mb-2">Model Info</h6>
-                    <small id="model-info" class="text-muted d-block">-</small>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Per-Class Metrics -->
-            <div class="card border-0 shadow-sm">
-              <div class="card-body">
-                <h5 class="mb-3">Per-Class Accuracy</h5>
-                <div class="table-responsive">
-                  <table class="table table-sm">
-                    <thead>
-                      <tr>
-                        <th>Person</th>
-                        <th>Test Samples</th>
-                        <th>Accuracy</th>
-                      </tr>
-                    </thead>
-                    <tbody id="class-metrics-table">
-                      <tr><td colspan="3" class="text-center text-muted">Loading...</td></tr>
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div id="metrics-error" style="display: none;" class="col-12">
-            <div class="alert alert-warning">
-              <i class="bi bi-exclamation-circle"></i>
-              <span id="metrics-error-text">Could not load model metrics</span>
+              <a href="/segmentation" class="read-more stretched-link"><span>Explore segmenter</span> <i class="bi bi-arrow-right"></i></a>
             </div>
           </div>
         </div>
       </div>
+    </section>
 
-    </section><!-- /Face Recognition Section -->
+   
 
-    
   </main>
 
   <footer id="footer" class="footer">
-
     <div class="container footer-top">
       <div class="row gy-4">
         <div class="col-lg-4 col-md-6 footer-about">
           <a href="index.html" class="d-flex align-items-center">
-            <span class="sitename">FlexStart</span>
+            <span class="sitename">EigenVisionSuite</span>
           </a>
           <div class="footer-contact pt-3">
-            <p>A108 Adam Street</p>
-            <p>New York, NY 535022</p>
-            <p class="mt-3"><strong>Phone:</strong> <span>+1 5589 55488 55</span></p>
-            <p><strong>Email:</strong> <span>info@example.com</span></p>
+            <p>Computer Vision Research Lab</p>
+            <p>PCA · Eigenfaces · Segmentation</p>
+            <p class="mt-3"><strong>Project components:</strong> Face Recognition + Segmentation modules</p>
           </div>
         </div>
-
         <div class="col-lg-2 col-md-3 footer-links">
-          <h4>Useful Links</h4>
+          <h4>Explore</h4>
           <ul>
-            <li><i class="bi bi-chevron-right"></i> <a href="#">Home</a></li>
-            <li><i class="bi bi-chevron-right"></i> <a href="#">About us</a></li>
-            <li><i class="bi bi-chevron-right"></i> <a href="#">Services</a></li>
-            <li><i class="bi bi-chevron-right"></i> <a href="#">Terms of service</a></li>
+            <li><i class="bi bi-chevron-right"></i> <a href="#hero">Home</a></li>
+            <li><i class="bi bi-chevron-right"></i> <a href="#services">Capabilities</a></li>
+            <li><i class="bi bi-chevron-right"></i> <a href="#metrics">Model Metrics</a></li>
+            <li><i class="bi bi-chevron-right"></i> <a href="/faceRecognition">Face Recognition</a></li>
           </ul>
         </div>
-
         <div class="col-lg-2 col-md-3 footer-links">
-          <h4>Our Services</h4>
+          <h4>Methods</h4>
           <ul>
-            <li><i class="bi bi-chevron-right"></i> <a href="#">Web Design</a></li>
-            <li><i class="bi bi-chevron-right"></i> <a href="#">Web Development</a></li>
-            <li><i class="bi bi-chevron-right"></i> <a href="#">Product Management</a></li>
-            <li><i class="bi bi-chevron-right"></i> <a href="#">Marketing</a></li>
+            <li><i class="bi bi-chevron-right"></i> <a href="#">PCA / KNN</a></li>
+            <li><i class="bi bi-chevron-right"></i> <a href="#">Otsu / Spectral</a></li>
+            <li><i class="bi bi-chevron-right"></i> <a href="#">K-means / MeanShift</a></li>
+            <li><i class="bi bi-chevron-right"></i> <a href="#">Region Growing</a></li>
           </ul>
         </div>
-
         <div class="col-lg-4 col-md-12">
-          <h4>Follow Us</h4>
-          <p>Cras fermentum odio eu feugiat lide par naso tierra videa magna derita valies</p>
+          <h4>Open Source Framework</h4>
+          <p>Built with Python, Flask, OpenCV, scikit-learn. Eigenface recognition + segmentation algorithms ready for benchmarking.</p>
           <div class="social-links d-flex">
-            <a href=""><i class="bi bi-twitter-x"></i></a>
-            <a href=""><i class="bi bi-facebook"></i></a>
-            <a href=""><i class="bi bi-instagram"></i></a>
-            <a href=""><i class="bi bi-linkedin"></i></a>
+            <a href="#"><i class="bi bi-github"></i></a>
+            <a href="#"><i class="bi bi-book"></i></a>
           </div>
         </div>
-
       </div>
     </div>
-
     <div class="container copyright text-center mt-4">
-      <p>© <span>Copyright</span> <strong class="px-1 sitename">FlexStart</strong> <span>All Rights Reserved</span></p>
+      <p>© <span>Copyright</span> <strong class="px-1 sitename">EigenVisionSuite</strong> <span>Computer Vision Project</span></p>
       <div class="credits">
-        <!-- All the links in the footer should remain intact. -->
-        <!-- You can delete the links only if you've purchased the pro version. -->
-        <!-- Licensing information: https://bootstrapmade.com/license/ -->
-        <!-- Purchase the pro version with working PHP/AJAX contact form: [buy-url] -->
-        Designed by <a href="https://bootstrapmade.com/">BootstrapMade</a> Distributed by <a href=“https://themewagon.com>ThemeWagon
+        Designed with BootstrapMade & adapted for face recognition / segmentation pipeline
       </div>
     </div>
-
   </footer>
 
-  <!-- Scroll Top -->
   <a href="#" id="scroll-top" class="scroll-top d-flex align-items-center justify-content-center"><i class="bi bi-arrow-up-short"></i></a>
 
   <!-- Vendor JS Files -->
@@ -496,9 +243,7 @@
   <script src="assets/vendor/isotope-layout/isotope.pkgd.min.js"></script>
   <script src="assets/vendor/swiper/swiper-bundle.min.js"></script>
 
-  <!-- Main JS File -->
+  <!-- Main JS File (fully integrated) -->
   <script src="assets/js/main.js"></script>
-
 </body>
-
 </html>

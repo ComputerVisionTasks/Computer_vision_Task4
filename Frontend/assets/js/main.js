@@ -62,13 +62,15 @@
       window.scrollY > 100 ? scrollTop.classList.add('active') : scrollTop.classList.remove('active');
     }
   }
-  scrollTop.addEventListener('click', (e) => {
-    e.preventDefault();
-    window.scrollTo({
-      top: 0,
-      behavior: 'smooth'
+  if (scrollTop) {
+    scrollTop.addEventListener('click', (e) => {
+      e.preventDefault();
+      window.scrollTo({
+        top: 0,
+        behavior: 'smooth'
+      });
     });
-  });
+  }
 
   window.addEventListener('load', toggleScrollTop);
   document.addEventListener('scroll', toggleScrollTop);
@@ -200,65 +202,37 @@
   document.addEventListener('scroll', navmenuScrollspy);
 
   /**
-   * Face recognition upload and prediction
+   * Face recognition upload and prediction (only if elements exist)
    */
   function initFaceRecognition() {
-    /** @type {HTMLElement|null} */
     const uploadArea = document.getElementById('upload-area');
-    /** @type {HTMLInputElement|null} */
-    const imageInput = /** @type {HTMLInputElement|null} */ (document.getElementById('image-input'));
-    /** @type {HTMLElement|null} */
+    const imageInput = document.getElementById('image-input');
     const previewContainer = document.getElementById('preview-container');
-    /** @type {HTMLImageElement|null} */
-    const previewImage = /** @type {HTMLImageElement|null} */ (document.getElementById('preview-image'));
-    /** @type {HTMLButtonElement|null} */
-    const clearBtn = /** @type {HTMLButtonElement|null} */ (document.getElementById('clear-btn'));
-    /** @type {HTMLElement|null} */
+    const previewImage = document.getElementById('preview-image');
+    const clearBtn = document.getElementById('clear-btn');
     const loadingSpinner = document.getElementById('loading-spinner');
-    /** @type {HTMLElement|null} */
     const resultsContainer = document.getElementById('results-container');
-    /** @type {HTMLElement|null} */
     const errorContainer = document.getElementById('error-container');
-    /** @type {HTMLElement|null} */
     const peopleList = document.getElementById('people-list');
 
     if (!uploadArea || !imageInput || !previewContainer || !previewImage) {
       return;
     }
 
-    /** @param {HTMLElement|null} element */
-    const showElement = (element) => {
-      if (element) {
-        element.classList.remove('d-none');
-      }
-    };
-
-    /** @param {HTMLElement|null} element */
-    const hideElement = (element) => {
-      if (element) {
-        element.classList.add('d-none');
-      }
-    };
-
+    const showElement = (element) => { if (element) element.classList.remove('d-none'); };
+    const hideElement = (element) => { if (element) element.classList.add('d-none'); };
     const resetMessages = () => {
       hideElement(loadingSpinner);
       hideElement(resultsContainer);
       hideElement(errorContainer);
     };
-
-    /** @param {string} message */
     const showError = (message) => {
-      /** @type {HTMLElement|null} */
       const errorMessage = document.getElementById('error-message');
-      if (errorMessage) {
-        errorMessage.textContent = message;
-      }
+      if (errorMessage) errorMessage.textContent = message;
       hideElement(loadingSpinner);
       hideElement(resultsContainer);
       showElement(errorContainer);
     };
-
-    /** @param {string[]} labels */
     const renderPeople = (labels) => {
       if (!peopleList) return;
       peopleList.innerHTML = labels.map((label) => `
@@ -270,7 +244,6 @@
         </div>
       `).join('');
     };
-
     const loadPeopleDatabase = async () => {
       if (!peopleList) return;
       try {
@@ -282,69 +255,41 @@
         }
         peopleList.innerHTML = '<div class="col-12 text-muted">No labels were returned by the backend.</div>';
       } catch (error) {
-        peopleList.innerHTML = '<div class="col-12 text-muted">Connect the Flask backend to load the database.</div>';
+        peopleList.innerHTML = '<div class="col-12 text-muted">Connect Flask backend to load database.</div>';
       }
     };
-
-    /** @param {File} file */
     const predictImage = async (file) => {
       const formData = new FormData();
       formData.append('image', file);
       resetMessages();
       showElement(loadingSpinner);
-
       try {
-        const response = await fetch('/api/recognize', {
-          method: 'POST',
-          body: formData,
-        });
-        /** @type {{ success?: boolean, error?: string, person?: string, confidence?: number }} */
+        const response = await fetch('/api/recognize', { method: 'POST', body: formData });
         const data = await response.json();
-
-        if (!response.ok || !data.success) {
-          throw new Error(data.error || 'Recognition failed');
-        }
-
-        /** @type {HTMLElement|null} */
+        if (!response.ok || !data.success) throw new Error(data.error || 'Recognition failed');
         const personName = document.getElementById('person-name');
-        /** @type {HTMLElement|null} */
         const confidenceLevel = document.getElementById('confidence-level');
-        /** @type {HTMLElement|null} */
         const confidenceBar = document.getElementById('confidence-bar');
-
-        if (personName) {
-          personName.textContent = data.person || 'Unknown';
-        }
-        if (confidenceLevel) {
-          confidenceLevel.textContent = `${Math.round(data.confidence || 0)}%`;
-        }
-        if (confidenceBar) {
-          confidenceBar.style.width = `${Math.round(data.confidence || 0)}%`;
-        }
-
+        if (personName) personName.textContent = data.person || 'Unknown';
+        if (confidenceLevel) confidenceLevel.textContent = `${Math.round(data.confidence || 0)}%`;
+        if (confidenceBar) confidenceBar.style.width = `${Math.round(data.confidence || 0)}%`;
         hideElement(loadingSpinner);
         showElement(resultsContainer);
       } catch (error) {
-        showError(error instanceof Error ? error.message : 'Unable to predict the image');
+        showError(error instanceof Error ? error.message : 'Unable to predict image');
       }
     };
-
     const clearImage = () => {
       imageInput.value = '';
       uploadArea.classList.remove('d-none');
       hideElement(previewContainer);
       resetMessages();
     };
-
     uploadArea.addEventListener('click', () => imageInput.click());
-
     imageInput.addEventListener('change', (event) => {
-      const target = /** @type {HTMLInputElement} */ (event.currentTarget);
+      const target = event.currentTarget;
       const [file] = target.files || [];
-      if (!file) {
-        return;
-      }
-
+      if (!file) return;
       const reader = new FileReader();
       reader.onload = (readerEvent) => {
         if (readerEvent.target instanceof FileReader && readerEvent.target.result && previewImage) {
@@ -356,16 +301,8 @@
       };
       reader.readAsDataURL(file);
     });
-
-    uploadArea.addEventListener('dragover', (event) => {
-      event.preventDefault();
-      uploadArea.classList.add('dragover');
-    });
-
-    uploadArea.addEventListener('dragleave', () => {
-      uploadArea.classList.remove('dragover');
-    });
-
+    uploadArea.addEventListener('dragover', (event) => { event.preventDefault(); uploadArea.classList.add('dragover'); });
+    uploadArea.addEventListener('dragleave', () => { uploadArea.classList.remove('dragover'); });
     uploadArea.addEventListener('drop', (event) => {
       event.preventDefault();
       uploadArea.classList.remove('dragover');
@@ -374,7 +311,6 @@
         showError('Please drop a valid image file.');
         return;
       }
-
       const reader = new FileReader();
       reader.onload = (readerEvent) => {
         if (readerEvent.target instanceof FileReader && readerEvent.target.result && previewImage) {
@@ -386,85 +322,65 @@
       };
       reader.readAsDataURL(file);
     });
-
-    if (clearBtn) {
-      clearBtn.addEventListener('click', clearImage);
-    }
-
+    if (clearBtn) clearBtn.addEventListener('click', clearImage);
     loadPeopleDatabase();
   }
 
   /**
-   * Load and display model evaluation metrics
+   * Load model metrics for dashboard (face recognition performance)
    */
   function loadModelMetrics() {
     const metricsLoading = document.getElementById('metrics-loading');
     const metricsContent = document.getElementById('metrics-content');
     const metricsError = document.getElementById('metrics-error');
+    const classMetricsLoading = document.getElementById('class-metrics-loading');
+    const classTableContainer = document.getElementById('class-table-container');
+    const classMetricsError = document.getElementById('class-metrics-error');
 
-    if (!metricsLoading || !metricsContent) {
-      return;
-    }
+    if (!metricsLoading || !metricsContent) return;
 
     fetch('/api/model-metrics')
       .then(response => response.json())
       .then(data => {
-        if (!data.success || !data.available) {
-          throw new Error(data.error || 'Metrics not available');
-        }
-
-        // Display accuracy metrics
-        document.getElementById('train-accuracy').textContent = 
-          (data.train_accuracy * 100).toFixed(2) + '%';
-        document.getElementById('test-accuracy').textContent = 
-          (data.test_accuracy * 100).toFixed(2) + '%';
-        
-        // Display model info
+        if (!data.success || !data.available) throw new Error(data.error || 'Metrics not available');
+        const trainAccElem = document.getElementById('train-accuracy');
+        const testAccElem = document.getElementById('test-accuracy');
+        if (trainAccElem) trainAccElem.textContent = (data.train_accuracy * 100).toFixed(2) + '%';
+        if (testAccElem) testAccElem.textContent = (data.test_accuracy * 100).toFixed(2) + '%';
         const modelInfoEl = document.getElementById('model-info');
         if (modelInfoEl && data.model_info) {
-          modelInfoEl.innerHTML = `
-            <strong>PCA Components:</strong> ${data.model_info.n_components}<br>
-            <strong>KNN Neighbors:</strong> ${data.model_info.n_neighbors}
-          `;
+          modelInfoEl.innerHTML = `<i class="bi bi-pc-display"></i> <strong>PCA components:</strong> ${data.model_info.n_components} &nbsp;|&nbsp; <strong>KNN neighbors:</strong> ${data.model_info.n_neighbors}`;
         }
-
-        // Display per-class metrics
         const tableBody = document.getElementById('class-metrics-table');
         if (tableBody && data.class_metrics) {
           tableBody.innerHTML = '';
-          
           Object.keys(data.class_metrics).forEach(classId => {
             const metric = data.class_metrics[classId];
             const row = document.createElement('tr');
             row.innerHTML = `
               <td><strong>${metric.label}</strong></td>
               <td>${metric.samples}</td>
-              <td>
-                <span class="badge" style="background-color: ${metric.accuracy >= 0.9 ? '#28a745' : metric.accuracy >= 0.7 ? '#ffc107' : '#dc3545'}">
-                  ${(metric.accuracy * 100).toFixed(1)}%
-                </span>
-              </td>
+              <td><span class="badge" style="background-color: ${metric.accuracy >= 0.9 ? '#28a745' : metric.accuracy >= 0.7 ? '#ffc107' : '#dc3545'}">${(metric.accuracy * 100).toFixed(1)}%</span></td>
             `;
             tableBody.appendChild(row);
           });
         }
-
-        // Show content and hide loading
         metricsLoading.style.display = 'none';
         metricsContent.style.display = 'block';
-        metricsError.style.display = 'none';
-
+        if (metricsError) metricsError.style.display = 'none';
+        if (classMetricsLoading) classMetricsLoading.style.display = 'none';
+        if (classTableContainer) classTableContainer.style.display = 'block';
+        if (classMetricsError) classMetricsError.style.display = 'none';
       })
       .catch(error => {
-        console.error('Error loading metrics:', error);
-        metricsLoading.style.display = 'none';
-        metricsContent.style.display = 'none';
-        metricsError.style.display = 'block';
-        
+        console.error('Metrics error:', error);
+        if (metricsLoading) metricsLoading.style.display = 'none';
+        if (metricsContent) metricsContent.style.display = 'none';
+        if (metricsError) metricsError.style.display = 'block';
+        if (classMetricsLoading) classMetricsLoading.style.display = 'none';
+        if (classMetricsError) classMetricsError.style.display = 'block';
         const errorText = document.getElementById('metrics-error-text');
-        if (errorText) {
-          errorText.textContent = error.message || 'Could not load model metrics';
-        }
+        if (errorText) errorText.textContent = error.message || 'Could not load model metrics';
       });
   }
 
