@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta content="width=device-width, initial-scale=1.0" name="viewport">
-  <title>Image Segmentation – EigenVision Suite</title>
-  <meta name="description" content="Unsupervised image segmentation using K-Means, Region Growing, Agglomerative Clustering, and Mean Shift algorithms.">
+  <title>Thresholding – EigenVision Suite</title>
+  <meta name="description" content="Image thresholding using Optimal, Otsu, and Spectral methods.">
 
   <link href="../assets/img/favicon.png" rel="icon">
   <link href="../assets/img/apple-touch-icon.png" rel="apple-touch-icon">
@@ -12,7 +12,7 @@
   <link href="../assets/vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
   <link href="../assets/vendor/bootstrap-icons/bootstrap-icons.css" rel="stylesheet">
   <link href="../assets/css/main.css" rel="stylesheet">
-  <link href="../assets/css/segmentation.css" rel="stylesheet">
+  <link href="../assets/css/Thresholding.css" rel="stylesheet">
 </head>
 <body class="index-page">
 
@@ -28,8 +28,8 @@
           <li><a href="/#services">Capabilities</a></li>
           <li><a href="/#metrics">Model Metrics</a></li>
           <li><a href="/faceRecognition">Face Recognition</a></li>
-          <li><a href="/segmentation" class="active">Segmentation</a></li>
-          <li><a href="/thresholding">Thresholding</a></li>
+          <li><a href="/segmentation">Segmentation</a></li>
+          <li><a href="/thresholding" class="active">Thresholding</a></li>
         </ul>
         <i class="mobile-nav-toggle d-xl-none bi bi-list"></i>
       </nav>
@@ -44,15 +44,14 @@
       <div class="container">
         <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
           <div>
-            <h1 class="seg-title"><i class="bi bi-grid-3x3-gap-fill"></i> Image Segmentation</h1>
+            <h1 class="seg-title"><i class="bi bi-slash-circle"></i> Thresholding</h1>
             <p class="seg-subtitle">Upload an image · choose a method · run</p>
           </div>
           <!-- Method tabs inline in header -->
           <div class="seg-method-tabs">
-            <button class="seg-tab-btn active" data-method="kmeans"><i class="bi bi-grid-3x3-gap"></i> K-Means</button>
-            <button class="seg-tab-btn" data-method="region-growing"><i class="bi bi-bezier2"></i> Region Growing</button>
-            <button class="seg-tab-btn" data-method="agglomerative"><i class="bi bi-diagram-3"></i> Agglomerative</button>
-            <button class="seg-tab-btn" data-method="meanshift"><i class="bi bi-broadcast"></i> Mean Shift</button>
+            <button class="seg-tab-btn active" data-method="optimal"><i class="bi bi-bullseye"></i> Optimal</button>
+            <button class="seg-tab-btn" data-method="otsu"><i class="bi bi-bar-chart-steps"></i> Otsu</button>
+            <button class="seg-tab-btn" data-method="spectral"><i class="bi bi-activity"></i> Spectral</button>
           </div>
         </div>
       </div>
@@ -84,43 +83,71 @@
               <!-- Parameter panels (shown after upload) -->
               <div id="seg-preview-wrap" class="d-none">
 
-                <!-- K-Means -->
-                <div id="tab-kmeans" class="seg-tab-panel active">
-                  <div class="seg-param">
-                    <label>Clusters (k) <span class="seg-val" id="kmeans-k-val">3</span></label>
-                    <input type="range" class="seg-slider" id="kmeans-k" min="2" max="8" value="3">
+                <!-- Optimal -->
+                <div id="tab-optimal" class="seg-tab-panel active">
+                  <!-- Global / Local radio -->
+                  <div class="seg-radio-group">
+                    <label class="seg-radio-label">
+                      <input type="radio" name="optimal-scope" value="global" checked>
+                      <span class="seg-radio-custom"></span> Global
+                    </label>
+                    <label class="seg-radio-label">
+                      <input type="radio" name="optimal-scope" value="local">
+                      <span class="seg-radio-custom"></span> Local
+                    </label>
+                  </div>
+                  <!-- Window Size (Local only) -->
+                  <div class="seg-param seg-local-only" id="optimal-window-wrap" style="display:none;">
+                    <label>Window Size <span class="seg-val" id="optimal-window-val">15</span></label>
+                    <input type="range" class="seg-slider" id="optimal-window" min="3" max="63" value="15" step="2">
                   </div>
                 </div>
 
-                <!-- Region Growing -->
-                <div id="tab-region-growing" class="seg-tab-panel">
-                  <div class="seg-param">
-                    <label>Threshold <span class="seg-val" id="rg-threshold-val">25</span></label>
-                    <input type="range" class="seg-slider" id="rg-threshold" min="1" max="100" value="25">
+                <!-- Otsu -->
+                <div id="tab-otsu" class="seg-tab-panel">
+                  <!-- Global / Local radio -->
+                  <div class="seg-radio-group">
+                    <label class="seg-radio-label">
+                      <input type="radio" name="otsu-scope" value="global" checked>
+                      <span class="seg-radio-custom"></span> Global
+                    </label>
+                    <label class="seg-radio-label">
+                      <input type="radio" name="otsu-scope" value="local">
+                      <span class="seg-radio-custom"></span> Local
+                    </label>
                   </div>
-                  <p class="seg-hint-text"><i class="bi bi-cursor"></i> Click the image (right) to add seed points</p>
-                  <div class="d-flex align-items-center gap-2 mt-1">
-                    <div id="rg-seed-status" class="seg-seed-status">No seeds — click the image to add one</div>
-                    <button id="rg-clear-seeds" class="seg-btn seg-btn-ghost" style="padding:3px 10px;font-size:0.72rem;">
-                      <i class="bi bi-x-circle"></i> Clear Seeds
-                    </button>
+                  <!-- Window Size (Local only) -->
+                  <div class="seg-param seg-local-only" id="otsu-window-wrap" style="display:none;">
+                    <label>Window Size <span class="seg-val" id="otsu-window-val">15</span></label>
+                    <input type="range" class="seg-slider" id="otsu-window" min="3" max="63" value="15" step="2">
                   </div>
                 </div>
 
-                <!-- Agglomerative -->
-                <div id="tab-agglomerative" class="seg-tab-panel">
+                <!-- Spectral -->
+                <div id="tab-spectral" class="seg-tab-panel">
                   <div class="seg-param">
-                    <label>Clusters <span class="seg-val" id="agg-clusters-val">4</span></label>
-                    <input type="range" class="seg-slider" id="agg-clusters" min="2" max="8" value="4">
+                    <label>Classes (Modes) <span class="seg-val" id="spectral-classes-val">3</span></label>
+                    <input type="range" class="seg-slider" id="spectral-classes" min="2" max="8" value="3">
                   </div>
-                  <p class="seg-hint-text"><i class="bi bi-lightning-fill"></i> Image downscaled to 20×20 internally</p>
-                </div>
-
-                <!-- Mean Shift -->
-                <div id="tab-meanshift" class="seg-tab-panel">
                   <div class="seg-param">
-                    <label>Bandwidth <span class="seg-val" id="ms-bandwidth-val">20</span></label>
-                    <input type="range" class="seg-slider" id="ms-bandwidth" min="5" max="100" value="20" step="5">
+                    <label>Histogram Gaussian (σ) <span class="seg-val" id="spectral-sigma-val">1.0</span></label>
+                    <input type="range" class="seg-slider" id="spectral-sigma" min="0.1" max="5.0" value="1.0" step="0.1">
+                  </div>
+                  <!-- Global / Local radio -->
+                  <div class="seg-radio-group">
+                    <label class="seg-radio-label">
+                      <input type="radio" name="spectral-scope" value="global" checked>
+                      <span class="seg-radio-custom"></span> Global
+                    </label>
+                    <label class="seg-radio-label">
+                      <input type="radio" name="spectral-scope" value="local">
+                      <span class="seg-radio-custom"></span> Local
+                    </label>
+                  </div>
+                  <!-- Window Size (Local only) -->
+                  <div class="seg-param seg-local-only" id="spectral-window-wrap" style="display:none;">
+                    <label>Window Size <span class="seg-val" id="spectral-window-val">15</span></label>
+                    <input type="range" class="seg-slider" id="spectral-window" min="3" max="63" value="15" step="2">
                   </div>
                 </div>
 
@@ -166,18 +193,17 @@
               <!-- Image comparison grid -->
               <div class="seg-image-grid">
 
-                <!-- Original (clickable for region growing seed) -->
-                <div class="seg-image-panel" id="rg-seed-wrapper">
+                <!-- Original -->
+                <div class="seg-image-panel">
                   <div class="seg-panel-label"><i class="bi bi-image"></i> Original</div>
                   <div class="seg-panel-img-wrap">
                     <img id="seg-original-img" class="seg-panel-img" alt="Original" style="display:none;">
-                    <div id="rg-seed-marker" class="seg-seed-marker"></div>
                   </div>
                 </div>
 
                 <!-- Result -->
                 <div class="seg-image-panel">
-                  <div class="seg-panel-label"><i class="bi bi-magic"></i> Segmented</div>
+                  <div class="seg-panel-label"><i class="bi bi-magic"></i> Thresholded</div>
                   <div class="seg-panel-img-wrap">
                     <img id="seg-result-img" class="seg-panel-img" alt="Result" style="display:none;">
                     <div id="seg-result-placeholder" class="seg-result-placeholder" style="display:none;">
@@ -187,9 +213,6 @@
                 </div>
 
               </div><!-- /seg-image-grid -->
-
-              <!-- Hidden seed img for coordinate calculation -->
-              <img id="rg-seed-img" src="" alt="" style="display:none;">
 
             </div>
           </div>
@@ -201,6 +224,6 @@
   </main>
 
   <script src="../assets/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
-  <script src="../assets/js/segmentation.js"></script>
+  <script src="../assets/js/thresholding.js"></script>
 </body>
 </html>
