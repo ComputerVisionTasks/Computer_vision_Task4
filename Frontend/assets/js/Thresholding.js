@@ -73,7 +73,7 @@ tabBtns.forEach(btn => {
     const panel = document.getElementById(`tab-${method}`);
     if (panel) panel.classList.add('active');
     currentMethod = method;
-    clearResults();
+    clearResultDisplay();
   });
 });
 
@@ -104,7 +104,7 @@ function loadFile(file) {
     if (emptyState) emptyState.style.display = 'none';
     dropzoneWrap.classList.add('d-none');
     previewWrap.classList.remove('d-none');
-    clearResults();
+    clearResultDisplay();
   };
   reader.readAsDataURL(file);
 }
@@ -122,13 +122,23 @@ clearBtn.addEventListener('click', () => {
   originalImg.style.display = 'none';
   const emptyState = document.getElementById('seg-empty-state');
   if (emptyState) emptyState.style.display = '';
-  clearResults();
+  clearResultDisplay();
 });
 
 function clearResults() {
   resultImg.src = '';
   resultImg.style.display = 'none';
   resultPlaceholder.style.display = 'flex';
+  loadingBox.classList.add('d-none');
+  errorBox.classList.add('d-none');
+  infoRow.innerHTML = '';
+}
+
+// Hide result display without showing spinner (used on tab switch / clear)
+function clearResultDisplay() {
+  resultImg.src = '';
+  resultImg.style.display = 'none';
+  resultPlaceholder.style.display = 'none';
   loadingBox.classList.add('d-none');
   errorBox.classList.add('d-none');
   infoRow.innerHTML = '';

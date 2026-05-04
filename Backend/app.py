@@ -547,7 +547,6 @@ def threshold_otsu():
 
 @app.route('/api/threshold/spectral', methods=['POST'])
 def threshold_spectral():
-    """Apply spectral thresholding to an uploaded image with colormap."""
     image = _load_image_from_request()
     if image is None:
         return jsonify({'success': False, 'error': 'No image provided'}), 400
@@ -555,11 +554,14 @@ def threshold_spectral():
     try:
         start_time = time.perf_counter()
         
+        # استلام البارامترات من الفرونت آند
         scope = request.form.get('scope', 'global')
         classes = int(request.form.get('classes', 3))
-        sigma = request.form.get('sigma', 1.0)
-        window_size = request.form.get('window_size', 15)
+        sigma = float(request.form.get('sigma', 1.0))
+        window_size = int(request.form.get('window_size', 15))
         
+        # تنفيذ الـ Thresholding
+        # تأكد إن الـ Logic جوه الدالة دي في حالة الـ local بيرجع np.mean(window)
         result, metadata = _apply_thresholding(
             image, 'spectral', scope,
             window_size=window_size,
@@ -567,21 +569,14 @@ def threshold_spectral():
             sigma=sigma
         )
         
-        result_f = result.astype(np.float32)
+        # --- التعديل السحري هنا ---
+        # 1. الـ normalize هيمط الـ Labels والـ Means مع بعض عشان يملوا الـ 255 درجة
+        result_8u = cv2.normalize(result, None, 0, 255, cv2.NORM_MINMAX, cv2.CV_8U)
 
-        # 2. السر هنا: بنقسم على عدد الكلاسيس الفعلي اللي السلايدر واقف عليه
-        # ده بيضمن إن الـ Label رقم 1 دايماً هياخد لون أخضر، والـ Label 2 ياخد أصفر وهكذا
-        denom = max(1, classes - 1)
-        result_scaled = (result_f / denom) * 255
-
-        # 3. اتأكد إن مفيش قيم بره الـ 0-255 وحولها لـ uint8
-        result_scaled = np.clip(result_scaled, 0, 255).astype(np.uint8)
-
-        # 4. التلوين دلوقتي هيكون مظبوط جداً
-        result_colored = cv2.applyColorMap(result_scaled, cv2.COLORMAP_JET)
-        result_scaled = cv2.normalize(result, None, 0, 255, cv2.NORM_MINMAX, cv2.CV_8U)
+        # 2. تطبيق الـ JET Colormap على النتيجة الممطوطة
+        result_colored = cv2.applyColorMap(result_8u, cv2.COLORMAP_JET)
         
-        # Encode colored result image to base64
+        # تحويل الصورة لـ Base64 للعرض
         _, buffer = cv2.imencode('.png', result_colored)
         result_b64 = base64.b64encode(buffer).decode('utf-8')
         

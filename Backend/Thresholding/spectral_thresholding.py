@@ -193,7 +193,7 @@ class SpectralThresholding:
 
     def segment_image(self, image, thresholds):
 
-        segmented = np.zeros_like(image)
+        segmented = np.zeros_like(image, dtype=np.float32)
         thresholds = sorted(thresholds)
         
         # Iterate through thresholds and assign class labels
