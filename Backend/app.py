@@ -14,7 +14,7 @@ from sklearn.metrics import accuracy_score, classification_report
 warnings.filterwarnings('ignore')
 
 BASE_DIR = Path(__file__).resolve().parent
-FRONTEND_DIR = BASE_DIR / 'Frontend'
+FRONTEND_DIR = BASE_DIR.parent / 'Frontend'
 MODEL_DIR = BASE_DIR / 'face_recognition_pca' / 'model'
 DATA_DIR = BASE_DIR / 'face_recognition_pca' / 'data'
 
