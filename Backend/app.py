@@ -11,6 +11,13 @@ import numpy as np
 from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
 from sklearn.metrics import accuracy_score, classification_report
+import sys
+
+# Add Thresholding module to path
+sys.path.insert(0, str(Path(__file__).resolve().parent / 'Thresholding'))
+from optimal_thresholding import OptimalThresholding
+from otsu_thresholding import OtsuThresholding
+from spectral_thresholding import SpectralThresholding
 
 warnings.filterwarnings('ignore')
 
@@ -190,6 +197,11 @@ def segmentation_placeholder() -> object:
 @app.route('/faceRecognition')
 def face_recognition_page() -> object:
     return send_from_directory(FRONTEND_DIR / 'pages', 'faceRecognition.html')
+
+
+@app.route('/thresholding')
+def thresholding_page() -> object:
+    return send_from_directory(FRONTEND_DIR / 'pages', 'Thresholding.html')
 
 
 @app.route('/api/recognize', methods=['POST'])
@@ -407,5 +419,180 @@ def _recognize_face_region(face_roi_gray: np.ndarray) -> tuple[str, float, float
     recognized = confidence > THRESHOLD
 
     return person_name, confidence, distance, recognized
+
+# ──────────────────────────────────────────────────────────────
+#  Thresholding APIs
+# ──────────────────────────────────────────────────────────────
+
+def _apply_thresholding(image_array, method, scope, **kwargs):
+    """
+    Apply thresholding to an image and return the result with metadata.
+    
+    Args:
+        image_array: Input image as numpy array (color or grayscale)
+        method: 'optimal', 'otsu', or 'spectral'
+        scope: 'global' or 'local'
+        **kwargs: Additional parameters (window_size, classes, sigma, etc.)
+    
+    Returns:
+        Tuple of (binary_image, threshold_value_or_label, metadata_dict)
+    """
+    # Convert to grayscale if needed
+    if len(image_array.shape) == 3:
+        gray = cv2.cvtColor(image_array, cv2.COLOR_BGR2GRAY)
+    else:
+        gray = image_array
+    
+    metadata = {'scope': scope}
+    
+    if method == 'optimal':
+        optimal = OptimalThresholding(scope)
+        block_size = int(kwargs.get('window_size', 15)) if scope == 'local' else None
+        result = optimal.apply_thresholding(gray, block_size=block_size)
+        threshold = optimal.compute_optimal_threshold(gray)
+        metadata['threshold'] = round(float(threshold), 2)
+    
+    elif method == 'otsu':
+        otsu = OtsuThresholding(scope)
+        block_size = int(kwargs.get('window_size', 15)) if scope == 'local' else None
+        if scope == 'global':
+            result = otsu.apply_global_threshold(gray)
+            threshold = otsu.compute_best_threshold(gray)
+            metadata['threshold'] = int(threshold)
+        else:
+            result = otsu.apply_local_threshold(gray, block_size=block_size)
+            metadata['threshold'] = f"local({block_size}x{block_size})"
+    
+    elif method == 'spectral':
+        spectral = SpectralThresholding()
+        num_classes = int(kwargs.get('classes', 3))
+        sigma = float(kwargs.get('sigma', 1.0))
+        window_size = int(kwargs.get('window_size', 15)) if scope == 'local' else None
+        
+        if scope == 'global':
+            result = spectral.global_otsu_multithreshold(gray, num_classes=num_classes, smoothing_sigma=sigma)
+        else:
+            result = spectral.local_otsu_multithreshold(gray, num_classes=num_classes, window_size=window_size, smoothing_sigma=sigma)
+        
+        metadata['classes'] = num_classes
+        metadata['sigma'] = sigma
+        if scope == 'local':
+            metadata['window_size'] = window_size
+        
+        # Convert result to uint8 for proper encoding
+        result = (result * 255 / np.max(result)).astype(np.uint8) if np.max(result) > 1 else result.astype(np.uint8)
+    
+    return result, metadata
+
+
+@app.route('/api/threshold/optimal', methods=['POST'])
+def threshold_optimal():
+    """Apply optimal thresholding to an uploaded image."""
+    image = _load_image_from_request()
+    if image is None:
+        return jsonify({'success': False, 'error': 'No image provided'}), 400
+    
+    try:
+        start_time = time.perf_counter()
+        
+        scope = request.form.get('scope', 'global')
+        window_size = request.form.get('window_size', 15)
+        
+        result, metadata = _apply_thresholding(image, 'optimal', scope, window_size=window_size)
+        
+        # Encode result image to base64
+        _, buffer = cv2.imencode('.png', result)
+        result_b64 = base64.b64encode(buffer).decode('utf-8')
+        
+        elapsed_ms = (time.perf_counter() - start_time) * 1000
+        metadata['result_image'] = f'data:image/png;base64,{result_b64}'
+        metadata['elapsed_ms'] = round(elapsed_ms, 2)
+        metadata['success'] = True
+        
+        return jsonify(metadata)
+    
+    except Exception as exc:
+        return jsonify({'success': False, 'error': str(exc)}), 500
+
+
+@app.route('/api/threshold/otsu', methods=['POST'])
+def threshold_otsu():
+    """Apply Otsu thresholding to an uploaded image."""
+    image = _load_image_from_request()
+    if image is None:
+        return jsonify({'success': False, 'error': 'No image provided'}), 400
+    
+    try:
+        start_time = time.perf_counter()
+        
+        scope = request.form.get('scope', 'global')
+        window_size = request.form.get('window_size', 15)
+        
+        result, metadata = _apply_thresholding(image, 'otsu', scope, window_size=window_size)
+        
+        # Encode result image to base64
+        _, buffer = cv2.imencode('.png', result)
+        result_b64 = base64.b64encode(buffer).decode('utf-8')
+        
+        elapsed_ms = (time.perf_counter() - start_time) * 1000
+        metadata['result_image'] = f'data:image/png;base64,{result_b64}'
+        metadata['elapsed_ms'] = round(elapsed_ms, 2)
+        metadata['success'] = True
+        
+        return jsonify(metadata)
+    
+    except Exception as exc:
+        return jsonify({'success': False, 'error': str(exc)}), 500
+
+
+@app.route('/api/threshold/spectral', methods=['POST'])
+def threshold_spectral():
+    """Apply spectral thresholding to an uploaded image with colormap."""
+    image = _load_image_from_request()
+    if image is None:
+        return jsonify({'success': False, 'error': 'No image provided'}), 400
+    
+    try:
+        start_time = time.perf_counter()
+        
+        scope = request.form.get('scope', 'global')
+        classes = int(request.form.get('classes', 3))
+        sigma = request.form.get('sigma', 1.0)
+        window_size = request.form.get('window_size', 15)
+        
+        result, metadata = _apply_thresholding(
+            image, 'spectral', scope,
+            window_size=window_size,
+            classes=classes,
+            sigma=sigma
+        )
+        
+        result_f = result.astype(np.float32)
+
+        # 2. السر هنا: بنقسم على عدد الكلاسيس الفعلي اللي السلايدر واقف عليه
+        # ده بيضمن إن الـ Label رقم 1 دايماً هياخد لون أخضر، والـ Label 2 ياخد أصفر وهكذا
+        denom = max(1, classes - 1)
+        result_scaled = (result_f / denom) * 255
+
+        # 3. اتأكد إن مفيش قيم بره الـ 0-255 وحولها لـ uint8
+        result_scaled = np.clip(result_scaled, 0, 255).astype(np.uint8)
+
+        # 4. التلوين دلوقتي هيكون مظبوط جداً
+        result_colored = cv2.applyColorMap(result_scaled, cv2.COLORMAP_JET)
+        result_scaled = cv2.normalize(result, None, 0, 255, cv2.NORM_MINMAX, cv2.CV_8U)
+        
+        # Encode colored result image to base64
+        _, buffer = cv2.imencode('.png', result_colored)
+        result_b64 = base64.b64encode(buffer).decode('utf-8')
+        
+        elapsed_ms = (time.perf_counter() - start_time) * 1000
+        metadata['result_image'] = f'data:image/png;base64,{result_b64}'
+        metadata['elapsed_ms'] = round(elapsed_ms, 2)
+        metadata['success'] = True
+        
+        return jsonify(metadata)
+    
+    except Exception as exc:
+        return jsonify({'success': False, 'error': str(exc)}), 500
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
