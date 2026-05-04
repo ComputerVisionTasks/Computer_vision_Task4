@@ -1,0 +1,350 @@
+/* =====================================================
+   segmentation.css  —  Compact Segmentation Page
+   ===================================================== */
+
+:root {
+  --seg-primary:   #4154f1;
+  --seg-accent:    #7c3aed;
+  --seg-surface:   #ffffff;
+  --seg-bg:        #f4f6ff;
+  --seg-border:    rgba(65, 84, 241, 0.14);
+  --seg-text:      #1e293b;
+  --seg-muted:     #64748b;
+  --seg-radius:    12px;
+  --seg-radius-sm: 8px;
+  --seg-shadow:    0 2px 16px rgba(65, 84, 241, 0.09);
+  --seg-trans:     0.2s ease;
+}
+
+/* ── Page shell ─────────────────────────────── */
+.seg-page {
+  padding-top: 64px;           /* header height */
+  background: var(--seg-bg);
+  min-height: 100vh;
+}
+
+/* ── Compact page header ────────────────────── */
+.seg-page-header {
+  background: var(--seg-surface);
+  border-bottom: 1px solid var(--seg-border);
+  padding: 12px 0;
+  position: sticky;
+  top: 64px;
+  z-index: 100;
+  box-shadow: var(--seg-shadow);
+}
+.seg-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--seg-text);
+  margin: 0;
+}
+.seg-title i { color: var(--seg-primary); margin-right: 6px; }
+.seg-subtitle {
+  font-size: 0.75rem;
+  color: var(--seg-muted);
+  margin: 0;
+}
+
+/* ── Method tabs ────────────────────────────── */
+.seg-method-tabs {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+.seg-tab-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 50px;
+  border: 1.5px solid var(--seg-border);
+  background: var(--seg-surface);
+  color: var(--seg-muted);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--seg-trans);
+  white-space: nowrap;
+}
+.seg-tab-btn:hover {
+  border-color: var(--seg-primary);
+  color: var(--seg-primary);
+}
+.seg-tab-btn.active {
+  background: linear-gradient(135deg, var(--seg-primary), var(--seg-accent));
+  border-color: transparent;
+  color: #fff;
+  box-shadow: 0 3px 12px rgba(65, 84, 241, .28);
+}
+
+/* ── Workspace ──────────────────────────────── */
+.seg-workspace {
+  padding: 16px 0 32px;
+}
+
+/* ── Cards ──────────────────────────────────── */
+.seg-card {
+  background: var(--seg-surface);
+  border-radius: var(--seg-radius);
+  box-shadow: var(--seg-shadow);
+  border: 1px solid var(--seg-border);
+  overflow: hidden;
+}
+.seg-card-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--seg-border);
+  background: #f8f9ff;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--seg-text);
+}
+.seg-card-header > i {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  background: linear-gradient(135deg, var(--seg-primary), var(--seg-accent));
+  color: #fff;
+  font-size: 0.88rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.seg-card-body { padding: 14px; }
+
+/* ── Dropzone ───────────────────────────────── */
+.seg-dropzone {
+  border: 2px dashed var(--seg-border);
+  border-radius: var(--seg-radius-sm);
+  background: #f8f9ff;
+  padding: 22px 14px;
+  text-align: center;
+  cursor: pointer;
+  transition: all var(--seg-trans);
+}
+.seg-dropzone:hover,
+.seg-dropzone.drag-over {
+  border-color: var(--seg-primary);
+  background: #eef0ff;
+}
+.seg-dropzone-icon {
+  font-size: 1.6rem;
+  color: var(--seg-primary);
+  margin-bottom: 6px;
+}
+.seg-dropzone-text {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--seg-text);
+  margin: 0;
+}
+.seg-link { color: var(--seg-primary); text-decoration: underline; cursor: pointer; }
+.seg-dropzone-hint {
+  font-size: 0.72rem;
+  color: var(--seg-muted);
+  margin: 4px 0 0;
+}
+
+/* ── Params ─────────────────────────────────── */
+.seg-param {
+  margin-top: 12px;
+}
+.seg-param label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--seg-text);
+  margin-bottom: 4px;
+}
+.seg-val {
+  background: var(--seg-primary);
+  color: #fff;
+  font-size: 0.7rem;
+  padding: 1px 8px;
+  border-radius: 20px;
+}
+.seg-slider {
+  width: 100%;
+  accent-color: var(--seg-primary);
+  cursor: pointer;
+}
+.seg-hint-text {
+  font-size: 0.72rem;
+  color: var(--seg-muted);
+  margin: 8px 0 0;
+}
+.seg-seed-status {
+  margin-top: 5px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--seg-accent);
+  background: #f3eeff;
+  border-radius: 20px;
+  padding: 3px 10px;
+  display: inline-block;
+}
+
+/* ── Action buttons ─────────────────────────── */
+.seg-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 14px;
+}
+.seg-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 16px;
+  border-radius: 50px;
+  border: none;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all var(--seg-trans);
+}
+.seg-btn-primary {
+  background: linear-gradient(135deg, var(--seg-primary), var(--seg-accent));
+  color: #fff;
+  box-shadow: 0 3px 10px rgba(65, 84, 241, .22);
+}
+.seg-btn-primary:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 5px 18px rgba(65,84,241,.32); }
+.seg-btn-ghost {
+  background: transparent;
+  color: var(--seg-muted);
+  border: 1.5px solid var(--seg-border);
+}
+.seg-btn-ghost:hover { border-color: var(--seg-primary); color: var(--seg-primary); }
+.seg-btn:disabled { opacity: .5; cursor: not-allowed; }
+
+/* ── Alert ──────────────────────────────────── */
+.seg-alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: var(--seg-radius-sm);
+  font-size: 0.78rem;
+  margin-top: 10px;
+}
+.seg-alert-danger { background: #fff1f2; color: #be123c; border: 1px solid #fecdd3; }
+
+/* ── Info pills ─────────────────────────────── */
+.seg-info-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 10px;
+}
+.seg-timing-badge,
+.seg-info-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 20px;
+}
+.seg-timing-badge {
+  background: linear-gradient(135deg, #eef0ff, #f3eeff);
+  color: var(--seg-primary);
+  border: 1px solid rgba(65,84,241,.15);
+}
+.seg-info-pill {
+  background: #f8f9ff;
+  color: var(--seg-muted);
+  border: 1px solid var(--seg-border);
+}
+
+/* ── Inline loading ─────────────────────────── */
+.seg-inline-loading {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.78rem;
+  color: var(--seg-primary);
+  font-weight: 600;
+}
+.seg-spin { animation: seg-spin 1s linear infinite; display: inline-block; }
+@keyframes seg-spin { to { transform: rotate(360deg); } }
+
+/* ── Output area ────────────────────────────── */
+.seg-output-body {
+  min-height: 300px;
+}
+.seg-empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--seg-muted);
+}
+.seg-empty-state i { font-size: 2rem; opacity: .3; display: block; margin-bottom: 10px; }
+.seg-empty-state p { font-size: 0.85rem; margin: 0; }
+
+/* ── Image comparison grid ──────────────────── */
+.seg-image-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+@media (max-width: 576px) { .seg-image-grid { grid-template-columns: 1fr; } }
+
+.seg-image-panel {}
+.seg-panel-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--seg-muted);
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.seg-panel-img-wrap {
+  position: relative;
+  border-radius: var(--seg-radius-sm);
+  overflow: hidden;
+  background: #f1f3ff;
+  border: 1px solid var(--seg-border);
+  min-height: 160px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+/* Crosshair cursor on original panel when region growing is active */
+#rg-seed-wrapper { cursor: crosshair; }
+.seg-panel-img {
+  width: 100%;
+  display: block;
+  object-fit: contain;
+}
+.seg-seed-marker {
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: rgba(124, 58, 237, .85);
+  border: 2.5px solid #fff;
+  box-shadow: 0 0 0 2px var(--seg-accent);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  display: none;
+}
+.seg-result-placeholder {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255,255,255,.7);
+}
+
+/* ── Tab panels ─────────────────────────────── */
+.seg-tab-panel { display: none; }
+.seg-tab-panel.active { display: block; animation: seg-fadein .25s ease; }
+@keyframes seg-fadein { from { opacity:0; transform:translateY(4px); } to { opacity:1; transform:none; } }

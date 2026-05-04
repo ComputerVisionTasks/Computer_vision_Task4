@@ -3,19 +3,25 @@
 <head>
   <meta charset="utf-8">
   <meta content="width=device-width, initial-scale=1.0" name="viewport">
-  <title>Segmentation Placeholder</title>
+  <title>Image Segmentation – EigenVision Suite</title>
+  <meta name="description" content="Unsupervised image segmentation using K-Means, Region Growing, Agglomerative Clustering, and Mean Shift algorithms.">
+
+  <link href="../assets/img/favicon.png" rel="icon">
+  <link href="../assets/img/apple-touch-icon.png" rel="apple-touch-icon">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link href="../assets/vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
   <link href="../assets/vendor/bootstrap-icons/bootstrap-icons.css" rel="stylesheet">
   <link href="../assets/css/main.css" rel="stylesheet">
+  <link href="../assets/css/segmentation.css" rel="stylesheet">
 </head>
 <body class="index-page">
+
+  <!-- Header -->
   <header id="header" class="header d-flex align-items-center fixed-top">
     <div class="container-fluid container-xl position-relative d-flex align-items-center">
       <a href="/" class="logo d-flex align-items-center">
-        <img src="../assets/img/Logo-Cv-04.png" alt="">
-        
+        <img src="../assets/img/Logo-Cv-04.png" alt="EigenVision Suite">
       </a>
-
       <nav id="navmenu" class="navmenu mx-auto">
         <ul>
           <li><a href="/">Home</a></li>
@@ -26,31 +32,169 @@
         </ul>
         <i class="mobile-nav-toggle d-xl-none bi bi-list"></i>
       </nav>
-
       <a class="btn-getstarted flex-md-shrink-0" href="/faceRecognition">Try Demo</a>
     </div>
   </header>
 
-  <main class="main">
-    <section class="hero section light-background" style="padding-top: 140px;">
+  <main class="main seg-page">
+
+    <!-- ── Compact page header ─────────────────────────── -->
+    <div class="seg-page-header">
       <div class="container">
-        <div class="row justify-content-center">
-          <div class="col-lg-8">
-            <div class="card shadow-sm border-0">
-              <div class="card-body p-5 text-center">
-                <span class="badge bg-primary mb-3">Coming Soon</span>
-                <h1 class="mb-3">Segmentation Page Placeholder</h1>
-                <p class="lead mb-4">This page is reserved for future image segmentation features. You can use it later to upload an image and visualize segmented regions.</p>
-                <div class="d-flex flex-column flex-sm-row justify-content-center gap-3">
-                  <a href="/" class="btn btn-primary">Back to Home</a>
-                  <a href="/faceRecognition" class="btn btn-outline-primary">Go to Face Recognition</a>
-                </div>
-              </div>
-            </div>
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+          <div>
+            <h1 class="seg-title"><i class="bi bi-grid-3x3-gap-fill"></i> Image Segmentation</h1>
+            <p class="seg-subtitle">Upload an image · choose a method · run</p>
+          </div>
+          <!-- Method tabs inline in header -->
+          <div class="seg-method-tabs">
+            <button class="seg-tab-btn active" data-method="kmeans"><i class="bi bi-grid-3x3-gap"></i> K-Means</button>
+            <button class="seg-tab-btn" data-method="region-growing"><i class="bi bi-bezier2"></i> Region Growing</button>
+            <button class="seg-tab-btn" data-method="agglomerative"><i class="bi bi-diagram-3"></i> Agglomerative</button>
+            <button class="seg-tab-btn" data-method="meanshift"><i class="bi bi-broadcast"></i> Mean Shift</button>
           </div>
         </div>
       </div>
-    </section>
+    </div>
+
+    <!-- ── Main workspace ──────────────────────────────── -->
+    <div class="container seg-workspace">
+      <div class="row g-3">
+
+        <!-- LEFT: Controls (upload + params) -->
+        <div class="col-lg-4">
+          <div class="seg-card">
+            <div class="seg-card-header">
+              <i class="bi bi-sliders2"></i>
+              <span>Controls</span>
+            </div>
+            <div class="seg-card-body">
+
+              <!-- Dropzone -->
+              <div id="seg-dropzone-wrap">
+                <div id="seg-dropzone" class="seg-dropzone">
+                  <div class="seg-dropzone-icon"><i class="bi bi-cloud-upload"></i></div>
+                  <p class="seg-dropzone-text">Drop image or <span class="seg-link">browse</span></p>
+                  <p class="seg-dropzone-hint"><i class="bi bi-info-circle"></i> JPG · PNG · BMP · WEBP</p>
+                </div>
+                <input id="seg-file-input" type="file" accept="image/*" hidden>
+              </div>
+
+              <!-- Parameter panels (shown after upload) -->
+              <div id="seg-preview-wrap" class="d-none">
+
+                <!-- K-Means -->
+                <div id="tab-kmeans" class="seg-tab-panel active">
+                  <div class="seg-param">
+                    <label>Clusters (k) <span class="seg-val" id="kmeans-k-val">3</span></label>
+                    <input type="range" class="seg-slider" id="kmeans-k" min="2" max="8" value="3">
+                  </div>
+                </div>
+
+                <!-- Region Growing -->
+                <div id="tab-region-growing" class="seg-tab-panel">
+                  <div class="seg-param">
+                    <label>Threshold <span class="seg-val" id="rg-threshold-val">25</span></label>
+                    <input type="range" class="seg-slider" id="rg-threshold" min="1" max="100" value="25">
+                  </div>
+                  <p class="seg-hint-text"><i class="bi bi-cursor"></i> Click the image (right) to pick a seed point</p>
+                  <div id="rg-seed-status" class="seg-seed-status">No seed selected</div>
+                </div>
+
+                <!-- Agglomerative -->
+                <div id="tab-agglomerative" class="seg-tab-panel">
+                  <div class="seg-param">
+                    <label>Clusters <span class="seg-val" id="agg-clusters-val">4</span></label>
+                    <input type="range" class="seg-slider" id="agg-clusters" min="2" max="8" value="4">
+                  </div>
+                  <p class="seg-hint-text"><i class="bi bi-lightning-fill"></i> Image downscaled to 20×20 internally</p>
+                </div>
+
+                <!-- Mean Shift -->
+                <div id="tab-meanshift" class="seg-tab-panel">
+                  <div class="seg-param">
+                    <label>Bandwidth <span class="seg-val" id="ms-bandwidth-val">20</span></label>
+                    <input type="range" class="seg-slider" id="ms-bandwidth" min="5" max="100" value="20" step="5">
+                  </div>
+                </div>
+
+                <!-- Action row -->
+                <div class="seg-actions">
+                  <button id="seg-run-btn" class="seg-btn seg-btn-primary"><i class="bi bi-play-fill"></i> Run</button>
+                  <button id="seg-clear-btn" class="seg-btn seg-btn-ghost"><i class="bi bi-x-circle"></i> Clear</button>
+                </div>
+
+                <!-- Error -->
+                <div id="seg-error" class="seg-alert seg-alert-danger d-none">
+                  <i class="bi bi-exclamation-triangle-fill"></i>
+                  <span id="seg-error-msg"></span>
+                </div>
+
+                <!-- Info pills -->
+                <div id="seg-info-row" class="seg-info-row"></div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+
+        <!-- RIGHT: Image panels (Original + Result) -->
+        <div class="col-lg-8">
+          <div class="seg-card">
+            <div class="seg-card-header">
+              <i class="bi bi-images"></i>
+              <span>Output</span>
+              <!-- Loading indicator inline -->
+              <div id="seg-loading" class="seg-inline-loading d-none ms-auto">
+                <div class="seg-spin"><i class="bi bi-arrow-repeat"></i></div> Processing…
+              </div>
+            </div>
+            <div class="seg-card-body seg-output-body">
+
+              <!-- Empty state (before any upload) -->
+              <div id="seg-empty-state" class="seg-empty-state">
+                <i class="bi bi-image-alt"></i>
+                <p>Upload an image and click <strong>Run</strong></p>
+              </div>
+
+              <!-- Image comparison grid -->
+              <div class="seg-image-grid">
+
+                <!-- Original (clickable for region growing seed) -->
+                <div class="seg-image-panel" id="rg-seed-wrapper">
+                  <div class="seg-panel-label"><i class="bi bi-image"></i> Original</div>
+                  <div class="seg-panel-img-wrap">
+                    <img id="seg-original-img" class="seg-panel-img" alt="Original" style="display:none;">
+                    <div id="rg-seed-marker" class="seg-seed-marker"></div>
+                  </div>
+                </div>
+
+                <!-- Result -->
+                <div class="seg-image-panel">
+                  <div class="seg-panel-label"><i class="bi bi-magic"></i> Segmented</div>
+                  <div class="seg-panel-img-wrap">
+                    <img id="seg-result-img" class="seg-panel-img" alt="Result" style="display:none;">
+                    <div id="seg-result-placeholder" class="seg-result-placeholder" style="display:none;">
+                      <div class="spinner-border text-primary spinner-border-sm"></div>
+                    </div>
+                  </div>
+                </div>
+
+              </div><!-- /seg-image-grid -->
+
+              <!-- Hidden seed img for coordinate calculation -->
+              <img id="rg-seed-img" src="" alt="" style="display:none;">
+
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /row -->
+    </div><!-- /container -->
+
   </main>
+
+  <script src="../assets/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+  <script src="../assets/js/segmentation.js"></script>
 </body>
 </html>
