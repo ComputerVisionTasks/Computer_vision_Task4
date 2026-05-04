@@ -522,6 +522,8 @@ def segment_agglomerative():
             'elapsed_ms': result['elapsed_ms'],
             'n_clusters': result['n_clusters'],
         })
+    except Exception as exc:
+        return jsonify({'success': False, 'error': str(exc)}), 500
 
 # ──────────────────────────────────────────────────────────────
 #  Thresholding APIs
@@ -635,6 +637,8 @@ def segment_meanshift():
             'elapsed_ms': result['elapsed_ms'],
             'bandwidth': result['bandwidth'],
         })
+    except Exception as exc:
+        return jsonify({'success': False, 'error': str(exc)}), 500
 @app.route('/api/threshold/otsu', methods=['POST'])
 def threshold_otsu():
     """Apply Otsu thresholding to an uploaded image."""
