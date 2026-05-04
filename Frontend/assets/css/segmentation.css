@@ -316,8 +316,8 @@
   align-items: center;
   justify-content: center;
 }
-/* Crosshair cursor on original panel when region growing is active */
-#rg-seed-wrapper { cursor: crosshair; }
+/* Crosshair cursor ONLY when Region Growing is the active method */
+#rg-seed-wrapper.rg-active { cursor: crosshair; }
 .seg-panel-img {
   width: 100%;
   display: block;

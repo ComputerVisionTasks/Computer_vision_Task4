@@ -98,8 +98,13 @@
                     <label>Threshold <span class="seg-val" id="rg-threshold-val">25</span></label>
                     <input type="range" class="seg-slider" id="rg-threshold" min="1" max="100" value="25">
                   </div>
-                  <p class="seg-hint-text"><i class="bi bi-cursor"></i> Click the image (right) to pick a seed point</p>
-                  <div id="rg-seed-status" class="seg-seed-status">No seed selected</div>
+                  <p class="seg-hint-text"><i class="bi bi-cursor"></i> Click the image (right) to add seed points</p>
+                  <div class="d-flex align-items-center gap-2 mt-1">
+                    <div id="rg-seed-status" class="seg-seed-status">No seeds — click the image to add one</div>
+                    <button id="rg-clear-seeds" class="seg-btn seg-btn-ghost" style="padding:3px 10px;font-size:0.72rem;">
+                      <i class="bi bi-x-circle"></i> Clear Seeds
+                    </button>
+                  </div>
                 </div>
 
                 <!-- Agglomerative -->
