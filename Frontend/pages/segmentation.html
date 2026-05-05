@@ -13,6 +13,35 @@
   <link href="../assets/vendor/bootstrap-icons/bootstrap-icons.css" rel="stylesheet">
   <link href="../assets/css/main.css" rel="stylesheet">
   <link href="../assets/css/segmentation.css" rel="stylesheet">
+  <style>
+    /* Force vertical layout for method tabs */
+    .seg-method-tabs-vertical {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      margin-top: 1rem;
+    }
+    .seg-method-tabs-vertical .seg-tab-btn {
+      width: 100%;
+      text-align: left;
+      padding: 0.6rem 1rem;
+      border-radius: 10px;
+      background: color-mix(in srgb, var(--accent-color), transparent 92%);
+      border: 1px solid color-mix(in srgb, var(--accent-color), transparent 85%);
+      color: var(--accent-color);
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+    .seg-method-tabs-vertical .seg-tab-btn.active {
+      background: var(--accent-color);
+      color: white;
+      border-color: var(--accent-color);
+    }
+    .seg-method-tabs-vertical .seg-tab-btn:hover:not(.active) {
+      background: color-mix(in srgb, var(--accent-color), transparent 85%);
+      transform: translateX(4px);
+    }
+  </style>
 </head>
 <body class="index-page">
 
@@ -24,9 +53,9 @@
       <nav id="navmenu" class="navmenu mx-auto">
         <ul>
           <li><a href="/">Home</a></li>
-          <li><a href="/faceRecognition" >Face Recognition</a></li>
+          <li><a href="/faceRecognition">Face Recognition & Detection</a></li>
           <li><a href="/segmentation" class="active">Segmentation</a></li>
-            <li><a href="/thresholding">Thresholding</a></li>
+          <li><a href="/thresholding">Thresholding</a></li>
         </ul>
         <i class="mobile-nav-toggle d-xl-none bi bi-list"></i>
       </nav>
@@ -35,25 +64,6 @@
   </header>
 
   <main class="main seg-page">
-
-    <!-- ── Compact page header ─────────────────────────── -->
-    <div class="seg-page-header">
-      <div class="container">
-        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
-          <div>
-            <h1 class="seg-title"><i class="bi bi-grid-3x3-gap-fill"></i> Image Segmentation</h1>
-            <p class="seg-subtitle">Upload an image · choose a method · run</p>
-          </div>
-          <!-- Method tabs inline in header -->
-          <div class="seg-method-tabs">
-            <button class="seg-tab-btn active" data-method="kmeans"><i class="bi bi-grid-3x3-gap"></i> K-Means</button>
-            <button class="seg-tab-btn" data-method="region-growing"><i class="bi bi-bezier2"></i> Region Growing</button>
-            <button class="seg-tab-btn" data-method="agglomerative"><i class="bi bi-diagram-3"></i> Agglomerative</button>
-            <button class="seg-tab-btn" data-method="meanshift"><i class="bi bi-broadcast"></i> Mean Shift</button>
-          </div>
-        </div>
-      </div>
-    </div>
 
     <!-- ── Main workspace ──────────────────────────────── -->
     <div class="container seg-workspace">
@@ -110,7 +120,6 @@
                     <label>Clusters <span class="seg-val" id="agg-clusters-val">4</span></label>
                     <input type="range" class="seg-slider" id="agg-clusters" min="2" max="8" value="4">
                   </div>
-
                 </div>
 
                 <!-- Mean Shift -->
@@ -138,6 +147,14 @@
               </div>
 
             </div>
+          </div>
+
+          <!-- Method tabs below controls card - VERTICAL layout -->
+          <div class="seg-method-tabs-vertical">
+            <button class="seg-tab-btn active" data-method="kmeans"><i class="bi bi-grid-3x3-gap"></i> K-Means</button>
+            <button class="seg-tab-btn" data-method="region-growing"><i class="bi bi-bezier2"></i> Region Growing</button>
+            <button class="seg-tab-btn" data-method="agglomerative"><i class="bi bi-diagram-3"></i> Agglomerative</button>
+            <button class="seg-tab-btn" data-method="meanshift"><i class="bi bi-broadcast"></i> Mean Shift</button>
           </div>
         </div>
 
@@ -187,7 +204,6 @@
 
               <!-- Hidden seed img for coordinate calculation -->
               <img id="rg-seed-img" src="" alt="" style="display:none;">
-
             </div>
           </div>
         </div>
