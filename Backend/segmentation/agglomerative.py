@@ -1,132 +1,178 @@
-"""
-segmentation/agglomerative.py
-Custom implementation of Agglomerative Hierarchical Clustering 
-using Centroid Linkage for execution efficiency in pure Python.
-"""
-import time
-import cv2
 import numpy as np
-from .utils import false_color, manual_resize_nn
-
-def agglomerative_clustering_scratch(data, n_clusters):
+import cv2
+import time
+ 
+ 
+# ──────────────────────────────────────────────────────────────
+#  Label → deterministic RGB colour
+# ──────────────────────────────────────────────────────────────
+_PALETTE = [
+    (220,  20,  60), (30, 144, 255), ( 50, 205,  50), (255, 165,   0),
+    (138,  43, 226), (  0, 206, 209), (255,  20, 147), (255, 215,   0),
+    (  0, 128,   0), (255,  69,   0), (100, 149, 237), (144, 238, 144),
+    (255, 182, 193), (173, 255,  47), (135, 206, 235), (210, 105,  30),
+]
+ 
+def label_color(label: int) -> np.ndarray:
+    """Return an RGB uint8 array [R, G, B] for the given cluster label."""
+    return np.array(_PALETTE[label % len(_PALETTE)], dtype=np.uint8)
+ 
+ 
+# ──────────────────────────────────────────────────────────────
+#  Core algorithm
+# ──────────────────────────────────────────────────────────────
+def agglomerative_segment(img: np.ndarray, num_clusters: int = 4) -> dict:
     """
-    Custom implementation of Agglomerative Hierarchical Clustering 
-    using Centroid Linkage for execution efficiency in pure Python.
+    Agglomerative (bottom-up) image segmentation.
+ 
+    Parameters
+    ----------
+    img          : H×W×3 or H×W uint8 numpy array (RGB or grayscale).
+    num_clusters : Target number of segments (clamped to [2, 16]).
+ 
+    Returns
+    -------
+    dict with keys:
+        'output'       – H×W×3 uint8 segmented image (numpy array, RGB).
+        'num_clusters' – Final number of clusters.
+        'iterations'   – Number of merge steps performed.
+ 
+    Algorithm
+    ---------
+    1. Divide image into square blocks → one initial cluster each.
+    2. Compute mean colour per block.
+    3. Repeatedly merge the two closest clusters (squared Euclidean
+       colour distance, average linkage via weighted mean update).
+    4. Stop when num_clusters remain.
+    5. Map every pixel to its nearest final cluster colour (avoids
+       blocky output).
     """
-    n_samples = len(data)
-    
-    # Initialize each data point as its own cluster
-    # Format: {cluster_id: list_of_data_indices}
-    clusters = {i: [i] for i in range(n_samples)}
-    
-    # Track cluster centroids to avoid redundant calculations
-    centroids = {i: data[i].astype(float) for i in range(n_samples)}
-    
-    # Track the next available cluster ID
-    next_cluster_id = n_samples
-    
-    # Iteratively merge the closest clusters until n_clusters is reached
-    while len(clusters) > n_clusters:
+ 
+    # ── 0. Validate / normalise input ────────────────────────
+    if img.ndim == 2:                           # grayscale → fake 1-ch
+        img = img[:, :, np.newaxis]
+    rows, cols, ch = img.shape
+    img_f = img.astype(np.float64)             # working copy in float
+ 
+    num_clusters = int(np.clip(num_clusters, 2, 16))
+ 
+    # ── 1. Adaptive block size (keep total blocks ≤ 500) ─────
+    # Limit number of initial blocks to avoid O(N³) slowdown.
+    bsize = 50
+    while ((rows // bsize) * (cols // bsize) > 500) and (bsize < 64):
+        bsize *= 2
+ 
+    brows = (rows + bsize - 1) // bsize
+    bcols = (cols + bsize - 1) // bsize
+    nb    = brows * bcols                       # total initial clusters
+ 
+    # ── 2. Compute mean colour per block ─────────────────────
+    # colors[i]  – float64 array of shape (ch,), mean colour of cluster i
+    # counts[i]  – int, number of original blocks in cluster i
+    # blocks[i]  – list of original block indices belonging to cluster i
+    colors = np.zeros((nb, ch), dtype=np.float64)
+    counts = np.ones(nb, dtype=np.int64)
+    blocks = [[i] for i in range(nb)]
+ 
+    for by in range(brows):
+        for bx in range(bcols):
+            bi   = by * bcols + bx
+            y0, y1 = by * bsize, min((by + 1) * bsize, rows)
+            x0, x1 = bx * bsize, min((bx + 1) * bsize, cols)
+            patch  = img_f[y0:y1, x0:x1, :]   # shape (h, w, ch)
+            colors[bi] = patch.mean(axis=(0, 1))
+ 
+    # ── 3. Greedy agglomerative merging ──────────────────────
+    active       = [True] * nb                 # active[i] → cluster i exists
+    active_count = nb
+    iters        = 0
+ 
+    while active_count > num_clusters:
+        act_idx = [i for i in range(nb) if active[i]]
+ 
+        # Find the pair with minimum squared Euclidean colour distance
         min_dist = float('inf')
-        closest_pair = None
-        
-        cluster_ids = list(clusters.keys())
-        n_current_clusters = len(cluster_ids)
-        
-        # Calculate pairwise centroid distances to find the closest clusters
-        for i in range(n_current_clusters):
-            for j in range(i + 1, n_current_clusters):
-                c1 = cluster_ids[i]
-                c2 = cluster_ids[j]
-                
-                # Euclidean distance between centroids
-                dist = np.linalg.norm(centroids[c1] - centroids[c2])
-                
-                if dist < min_dist:
-                    min_dist = dist
-                    closest_pair = (c1, c2)
-        
-        # Merge the closest pair
-        c1, c2 = closest_pair
-        merged_indices = clusters[c1] + clusters[c2]
-        
-        # Calculate the new centroid
-        new_centroid = np.mean(data[merged_indices], axis=0)
-        
-        # Store the new cluster
-        clusters[next_cluster_id] = merged_indices
-        centroids[next_cluster_id] = new_centroid
-        
-        # Delete the old merged clusters
-        del clusters[c1]
-        del clusters[c2]
-        del centroids[c1]
-        del centroids[c2]
-        
-        next_cluster_id += 1
-        
-    # Reconstruct the 1D label array mapped to the original data points
-    labels = np.zeros(n_samples, dtype=int)
-    for final_label, (cid, indices) in enumerate(clusters.items()):
-        for idx in indices:
-            labels[idx] = final_label
-            
-    return labels
+        mi, mj   = -1, -1
+ 
+        # Vectorised pairwise distance over active clusters
+        act_arr = np.array(act_idx)            # shape (K,)
+        C       = colors[act_arr]              # shape (K, ch)
+ 
+        # Compute upper-triangle distances without a Python double loop
+        # diff[i, j] = C[i] - C[j]  →  dist² = sum over channels
+        #   We use broadcasting: (K,1,ch) - (1,K,ch)
+        diff   = C[:, np.newaxis, :] - C[np.newaxis, :, :]  # (K, K, ch)
+        dist2  = (diff ** 2).sum(axis=2)                     # (K, K)
+ 
+        # Mask diagonal & lower triangle (look at upper triangle only)
+        K = len(act_idx)
+        mask = np.triu(np.ones((K, K), dtype=bool), k=1)
+        dist2[~mask] = float('inf')
+ 
+        flat_idx = dist2.argmin()
+        ii, jj   = divmod(flat_idx, K)
+ 
+        mi = act_idx[ii]
+        mj = act_idx[jj]
+ 
+        if mi < 0:
+            break
+ 
+        # ── 4. Merge mj into mi (weighted average colour) ────
+        total           = counts[mi] + counts[mj]
+        colors[mi]      = (colors[mi] * counts[mi] + colors[mj] * counts[mj]) / total
+        counts[mi]      = total
+        blocks[mi]     += blocks[mj]
+        active[mj]      = False
+        active_count   -= 1
+        iters          += 1
+ 
+    # ── 5. Collect final cluster colours ─────────────────────
+    final_colors = colors[[i for i in range(nb) if active[i]]]  # (K, ch)
+ 
+    # ── 6. Per-pixel nearest-cluster assignment ───────────────
+    # Build pixel matrix: shape (H*W, ch)
+    pixels = img_f.reshape(-1, ch)            # (N, ch)
+ 
+    # Squared distances to each final cluster: (N, K)
+    diff2 = pixels[:, np.newaxis, :] - final_colors[np.newaxis, :, :]
+    dist2_px = (diff2 ** 2).sum(axis=2)       # (N, K)
+    labels = dist2_px.argmin(axis=1)          # (N,)
+ 
+    # ── 7. Build output image ─────────────────────────────────
+    palette = np.stack([label_color(l) for l in range(len(final_colors))])
+    output  = palette[labels].reshape(rows, cols, 3).astype(np.uint8)
+ 
+    return {
+        "output":       output,
+        "num_clusters": num_clusters,
+        "iterations":   iters,
+    }
+ 
 
+# ──────────────────────────────────────────────────────────────
+#  API Wrapper for the Flask Backend
+# ──────────────────────────────────────────────────────────────
 def run_agglomerative(image_bgr: np.ndarray, n_clusters: int = 4) -> dict:
     """
-    Wrapper function that adapts the custom agglomerative implementation
-    for the web backend API.
+    Adapter function that connects the new agglomerative implementation
+    to the existing Flask API endpoints.
     """
     t0 = time.perf_counter()
-    orig_h, orig_w = image_bgr.shape[:2]
     
-    # Target size is bumped to 25x25. 
-    # Any higher causes extreme delays because the provided algorithm is O(N^3).
-    target_size = (25, 25)
+    # Convert incoming OpenCV BGR image to RGB as expected by the new algorithm
+    image_rgb = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2RGB)
     
-    # Convert to grayscale
-    gray = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2GRAY)
+    # Execute the user's agglomerative clustering implementation
+    res = agglomerative_segment(image_rgb, num_clusters=n_clusters)
     
-    # Resize
-    img = cv2.resize(gray, target_size)
-    
-    # Sharpening kernel
-    kernel = np.array([[0, -1, 0],
-                       [-1, 5,-1],
-                       [0, -1, 0]])
-    img_sharpened = cv2.filter2D(img, -1, kernel)
-    
-    # Extract spatial coordinates to force spatial coherence in the clusters
-    h, w = img_sharpened.shape
-    y_coords, x_coords = np.mgrid[0:h, 0:w]
-    
-    # Scale coordinates so they balance with intensity values (0-255)
-    spatial_weight = 255.0 / max(h, w)
-    
-    # Create feature vector [intensity, y, x]
-    features = np.column_stack((
-        img_sharpened.flatten(),
-        y_coords.flatten() * spatial_weight,
-        x_coords.flatten() * spatial_weight
-    ))
-    
-    # Execute custom AHC
-    labels = agglomerative_clustering_scratch(features, n_clusters)
-    
-    # Rebuild 2D segmented image at the small scale
-    segmented_img_small = labels.reshape(img_sharpened.shape)
-    
-    # Upscale label image to original resolution using Nearest-Neighbour
-    label_full = manual_resize_nn(segmented_img_small, orig_w, orig_h)
-
-    # Vivid false-colour mapping: cluster index -> distinct palette colour
-    result_bgr = false_color(label_full.flatten(), (orig_h, orig_w))
+    # Convert the RGB output back to BGR for the Flask JPEG encoder
+    result_bgr = cv2.cvtColor(res['output'], cv2.COLOR_RGB2BGR)
     
     elapsed = (time.perf_counter() - t0) * 1000.0
-
+    
     return {
         'result_image': result_bgr,
         'elapsed_ms':   round(elapsed, 1),
-        'n_clusters':   n_clusters,
+        'n_clusters':   res['num_clusters'],
     }
