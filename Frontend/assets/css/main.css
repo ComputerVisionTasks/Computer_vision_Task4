@@ -2936,3 +2936,9 @@ section,
     .metrics-content {
       animation: fadeSlideUp 0.4s ease-out;
     }
+
+    .logo-img {
+    height: 40px;       /* control size */
+    width: auto;
+    object-fit: contain;
+}

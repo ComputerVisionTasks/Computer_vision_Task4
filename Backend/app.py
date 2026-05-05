@@ -1,10 +1,16 @@
-from base64 import b64decode
+"""
+app.py  –  EigenVision Suite Backend (Full)
+Segmentation (K‑Means, Region Growing, Agglomerative, Mean Shift)
+Thresholding (Optimal, Otsu, Spectral)
+Face Detection (Haar Cascade) + Face Recognition (PCA / KNN)
+"""
+
+from base64 import b64decode, b64encode
 import json
 import os
 from pathlib import Path
 import pickle
 import warnings
-import base64
 import time
 import cv2
 import numpy as np
@@ -25,11 +31,15 @@ from spectral_thresholding import SpectralThresholding
 
 warnings.filterwarnings('ignore')
 
+# ── Paths ──────────────────────────────────────────────────────────────
 BASE_DIR = Path(__file__).resolve().parent
 FRONTEND_DIR = BASE_DIR.parent / 'Frontend'
 MODEL_DIR = BASE_DIR / 'face_recognition_pca' / 'model'
 DATA_DIR = BASE_DIR / 'face_recognition_pca' / 'data'
 
+HAAR_CASCADE_PATH = cv2.data.haarcascades + 'haarcascade_frontalface_default.xml'
+
+# ── Flask app ──────────────────────────────────────────────────────────
 app = Flask(
     __name__,
     static_folder=str(FRONTEND_DIR / 'assets'),
@@ -37,6 +47,7 @@ app = Flask(
 )
 CORS(app)
 
+# ── Load PCA / KNN models ──────────────────────────────────────────────
 with open(MODEL_DIR / 'pca_model.pkl', 'rb') as model_file:
     pca_model = pickle.load(model_file)
 
@@ -51,7 +62,12 @@ with open(MODEL_DIR / 'label_map.json', 'r', encoding='utf-8') as labels_file:
     raw_label_map = json.load(labels_file)
     label_map = {int(key): value for key, value in raw_label_map.items()}
 
-# Load test data for metrics
+# ── Load Haar Cascade ──────────────────────────────────────────────────
+face_cascade = cv2.CascadeClassifier(HAAR_CASCADE_PATH)
+if face_cascade.empty():
+    raise RuntimeError(f"Could not load Haar Cascade from: {HAAR_CASCADE_PATH}")
+
+# ── Load test data for metrics ─────────────────────────────────────────
 X_test = None
 y_test = None
 X_train = None
@@ -65,8 +81,12 @@ try:
 except Exception as e:
     print(f"Warning: Could not load test data: {e}")
 
+# ═══════════════════════════════════════════════════════════════════════
+#  Private helpers – image loading / detection / recognition
+# ═══════════════════════════════════════════════════════════════════════
 
 def _load_image_from_request() -> np.ndarray | None:
+    """Read an image from multipart/form-data or base64 JSON payload."""
     if 'image' in request.files:
         file_bytes = np.frombuffer(request.files['image'].read(), np.uint8)
         return cv2.imdecode(file_bytes, cv2.IMREAD_COLOR)
@@ -89,127 +109,225 @@ def _load_image_from_request() -> np.ndarray | None:
     return cv2.imdecode(file_buffer, cv2.IMREAD_COLOR)
 
 
-def _predict_person(image: np.ndarray) -> tuple[str, float, float]:
-    gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    resized_image = cv2.resize(gray_image, image_size)
-    normalized_image = resized_image.astype(np.float32) / 255.0
-    feature_vector = normalized_image.flatten().reshape(1, -1)
+def _detect_faces(image: np.ndarray) -> tuple[list[dict], np.ndarray, str]:
+    """
+    Detect faces with Haar Cascade. Draws bounding rectangles only – no text.
+    Returns:
+        faces: list of {x, y, w, h}
+        annotated: BGR image with rectangles
+        mode: 'color' or 'grayscale'
+    """
+    is_color = len(image.shape) == 3 and image.shape[2] == 3
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY) if is_color else image.copy()
+    mode = 'color' if is_color else 'grayscale'
 
-    pca_features = pca_model.transform(feature_vector)
-    predicted_label = int(knn_model.predict(pca_features)[0])
-    person_name = label_map.get(predicted_label, f'unknown_{predicted_label}')
+    detected = face_cascade.detectMultiScale(
+        gray,
+        scaleFactor=1.1,
+        minNeighbors=5,
+        minSize=(30, 30),
+        flags=cv2.CASCADE_SCALE_IMAGE,
+    )
+
+    annotated = image.copy()
+    faces = []
+
+    for (x, y, w, h) in detected:
+        faces.append({'x': int(x), 'y': int(y), 'w': int(w), 'h': int(h)})
+        cv2.rectangle(annotated, (x, y), (x + w, y + h), (65, 84, 241), 2)
+
+    return faces, annotated, mode
+
+
+def _preprocess_face_region(face_roi_gray: np.ndarray) -> np.ndarray:
+    """
+    Pad a possibly non-square face region to match the exact image_size while
+    preserving aspect ratio – exactly as the training faces were prepared.
+    Returns a normalized, flattened feature vector.
+    """
+    h, w = face_roi_gray.shape
+    target_w, target_h = image_size
+
+    scale = min(target_w / w, target_h / h)
+    new_w = int(w * scale)
+    new_h = int(h * scale)
+    resized = cv2.resize(face_roi_gray, (new_w, new_h))
+
+    canvas = np.zeros((target_h, target_w), dtype=np.float32)
+    x_offset = (target_w - new_w) // 2
+    y_offset = (target_h - new_h) // 2
+    canvas[y_offset:y_offset + new_h, x_offset:x_offset + new_w] = resized
+
+    canvas = canvas / 255.0
+    return canvas.flatten().reshape(1, -1)
+
+
+def _predict_person(image: np.ndarray) -> tuple[str, float, float]:
+    """
+    Project image onto PCA space and classify with KNN.
+    Returns 'Unknown' when the nearest‑neighbour distance exceeds UNKNOWN_THRESHOLD.
+    """
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    resized = cv2.resize(gray, image_size)
+    normed = resized.astype(np.float32) / 255.0
+    vector = normed.flatten().reshape(1, -1)
+
+    pca_feat = pca_model.transform(vector)
+    pred_lbl = int(knn_model.predict(pca_feat)[0])
 
     distance = 0.0
     if hasattr(knn_model, 'kneighbors'):
-        distances, _ = knn_model.kneighbors(pca_features, n_neighbors=1)
+        distances, _ = knn_model.kneighbors(pca_feat, n_neighbors=1)
         distance = float(distances[0][0])
 
-    confidence = _confidence_from_features(pca_features, predicted_label, distance)
-    return person_name, confidence, distance
+    UNKNOWN_THRESHOLD = 1.5   # tunable; increase to be more permissive
+    if distance > UNKNOWN_THRESHOLD:
+        return 'Unknown', 0.0, distance
+
+    name = label_map.get(pred_lbl, 'Unknown')
+    # Confidence based on distance (0-100)
+    confidence = max(0.0, min(100.0, 100.0 - distance * 50.0))
+    return name, confidence, distance
 
 
-def _confidence_from_features(pca_features: np.ndarray, predicted_label: int, distance: float = 0.0) -> float:
-    """Return a stable confidence score for the predicted label."""
-    if hasattr(knn_model, 'predict_proba'):
-        probabilities = knn_model.predict_proba(pca_features)[0]
-        classes = getattr(knn_model, 'classes_', [])
-        if len(classes) > 0:
-            class_index = int(np.where(classes == predicted_label)[0][0]) if predicted_label in classes else int(np.argmax(probabilities))
-            return float(np.clip(probabilities[class_index] * 100.0, 0.0, 100.0))
+def _recognize_face_region(face_roi_gray: np.ndarray) -> tuple[str, float, float, bool]:
+    """
+    Recognize a detected face ROI using PCA+KNN.
+    Returns (person_name, confidence, distance, is_known).
+    """
+    feature_vector = _preprocess_face_region(face_roi_gray)
+    pca_features = pca_model.transform(feature_vector)
+    predicted_label = int(knn_model.predict(pca_features)[0])
 
-    # Fallback for classifiers without probability estimates.
-    return float(np.clip((1.0 / (1.0 + distance)) * 100.0, 0.0, 100.0))
+    distances, _ = knn_model.kneighbors(pca_features, n_neighbors=1)
+    distance = float(distances[0][0])
+
+    UNKNOWN_THRESHOLD = 1.5
+    if distance > UNKNOWN_THRESHOLD:
+        return 'Unknown', 0.0, distance, False
+
+    person_name = label_map.get(predicted_label, 'Unknown')
+    confidence = max(0.0, min(100.0, 100.0 - distance * 50.0))
+    return person_name, confidence, distance, True
 
 
 def _compute_model_metrics() -> dict:
-    """Compute evaluation metrics using test data from PCA notebook"""
+    """Compute evaluation metrics using test data from PCA notebook."""
     if X_test is None or y_test is None or X_train is None or y_train is None:
-        return {
-            'success': False,
-            'error': 'Test data not available',
-            'available': False
-        }
-    
+        return {'success': False, 'error': 'Test data not available', 'available': False}
+
     try:
-        # Data is already normalized and flattened from the PCA notebook
-        # No need to divide by 255 or reshape
-        X_test_data = X_test if len(X_test.shape) == 2 else X_test.reshape(X_test.shape[0], -1)
-        X_train_data = X_train if len(X_train.shape) == 2 else X_train.reshape(X_train.shape[0], -1)
-        
-        # Transform with PCA
-        X_test_pca = pca_model.transform(X_test_data)
-        X_train_pca = pca_model.transform(X_train_data)
-        
-        # Get predictions
-        y_train_pred = knn_model.predict(X_train_pca)
-        y_test_pred = knn_model.predict(X_test_pca)
-        
-        # Calculate accuracies
-        train_accuracy = accuracy_score(y_train, y_train_pred)
-        test_accuracy = accuracy_score(y_test, y_test_pred)
-        
-        # Per-class metrics
+        def _flat(X):
+            return X if len(X.shape) == 2 else X.reshape(X.shape[0], -1)
+
+        X_tr_pca = pca_model.transform(_flat(X_train))
+        X_te_pca = pca_model.transform(_flat(X_test))
+        y_tr_pred = knn_model.predict(X_tr_pca)
+        y_te_pred = knn_model.predict(X_te_pca)
+
         class_metrics = {}
-        unique_labels = np.unique(y_test)
-        
-        for label in sorted(unique_labels):
-            mask = y_test == label
-            if np.sum(mask) > 0:
-                class_acc = accuracy_score(y_test[mask], y_test_pred[mask])
-                class_metrics[str(int(label))] = {
-                    'label': label_map.get(int(label), f'unknown_{label}'),
-                    'samples': int(np.sum(mask)),
-                    'accuracy': round(float(class_acc), 4)
-                }
-        
-        # Model info
-        model_info = {
-            'n_components': int(pca_model.n_components_),
-            'n_neighbors': int(knn_model.n_neighbors),
-            'total_classes': len(label_map)
-        }
-        
+        for lbl in sorted(np.unique(y_test)):
+            mask = y_test == lbl
+            class_metrics[str(int(lbl))] = {
+                'label': label_map.get(int(lbl), f'unknown_{lbl}'),
+                'samples': int(mask.sum()),
+                'accuracy': round(float(accuracy_score(y_test[mask], y_te_pred[mask])), 4),
+            }
+
         return {
             'success': True,
             'available': True,
-            'train_accuracy': round(float(train_accuracy), 4),
-            'test_accuracy': round(float(test_accuracy), 4),
+            'train_accuracy': round(float(accuracy_score(y_train, y_tr_pred)), 4),
+            'test_accuracy': round(float(accuracy_score(y_test, y_te_pred)), 4),
             'train_samples': int(len(y_train)),
             'test_samples': int(len(y_test)),
             'class_metrics': class_metrics,
-            'model_info': model_info
+            'model_info': {
+                'n_components': int(pca_model.n_components_),
+                'n_neighbors': int(knn_model.n_neighbors),
+                'total_classes': len(label_map),
+            },
         }
-    
     except Exception as e:
-        return {
-            'success': False,
-            'error': str(e),
-            'available': False
-        }
+        return {'success': False, 'error': str(e), 'available': False}
 
+
+# ═══════════════════════════════════════════════════════════════════════
+#  Routes – static pages
+# ═══════════════════════════════════════════════════════════════════════
 
 @app.route('/')
-def home() -> object:
+def home():
     return send_from_directory(FRONTEND_DIR, 'index.html')
 
-
 @app.route('/segmentation')
-def segmentation_page() -> object:
+def segmentation_page():
     return send_from_directory(FRONTEND_DIR / 'pages', 'segmentation.html')
 
-
 @app.route('/faceRecognition')
-def face_recognition_page() -> object:
+def face_recognition_page():
     return send_from_directory(FRONTEND_DIR / 'pages', 'faceRecognition.html')
 
-
 @app.route('/thresholding')
-def thresholding_page() -> object:
+def thresholding_page():
     return send_from_directory(FRONTEND_DIR / 'pages', 'Thresholding.html')
 
 
+# ═══════════════════════════════════════════════════════════════════════
+#  Routes – API (Face Detection & Recognition)
+# ═══════════════════════════════════════════════════════════════════════
+
+@app.route('/api/health', methods=['GET'])
+def health():
+    return jsonify({
+        'success': True,
+        'status': 'running',
+        'models_loaded': True,
+        'labels_count': len(label_map),
+    })
+
+@app.route('/api/labels', methods=['GET'])
+def get_labels():
+    ordered_labels = [label_map[i] for i in sorted(label_map)]
+    return jsonify({'success': True, 'labels': ordered_labels, 'count': len(ordered_labels)})
+
+@app.route('/api/model-metrics', methods=['GET'])
+def get_model_metrics():
+    return jsonify(_compute_model_metrics())
+
+@app.route('/api/detect', methods=['POST'])
+def detect_faces():
+    """
+    POST /api/detect
+    Returns bounding boxes only (no text labels) + annotated image as base64.
+    """
+    image = _load_image_from_request()
+    if image is None:
+        return jsonify({'success': False, 'error': 'No image provided'}), 400
+
+    try:
+        faces, annotated, mode = _detect_faces(image)
+        _, buffer = cv2.imencode('.jpg', annotated, [cv2.IMWRITE_JPEG_QUALITY, 92])
+        result_b64 = b64encode(buffer).decode('utf-8')
+        result_src = f'data:image/jpeg;base64,{result_b64}'
+
+        return jsonify({
+            'success': True,
+            'face_count': len(faces),
+            'faces': faces,
+            'result_image': result_src,
+            'mode': mode,
+        })
+    except Exception as exc:
+        return jsonify({'success': False, 'error': str(exc)}), 500
+
 @app.route('/api/recognize', methods=['POST'])
-def recognize_face() -> object:
+def recognize_face():
+    """
+    POST /api/recognize
+    Recognizes a single face (whole image is assumed to be a face).
+    Returns 'Unknown' if confidence is low.
+    """
     image = _load_image_from_request()
     if image is None:
         return jsonify({'success': False, 'error': 'No image provided'}), 400
@@ -218,126 +336,38 @@ def recognize_face() -> object:
         started_at = time.perf_counter()
         person_name, confidence, distance = _predict_person(image)
         inference_time_ms = (time.perf_counter() - started_at) * 1000.0
-        return jsonify(
-            {
-                'success': True,
-                'person': person_name,
-                'confidence': round(confidence, 2),
-                'distance': round(distance, 4),
-                'inference_time_ms': round(inference_time_ms, 2),
-            }
-        )
-    except Exception as exc:
-        return jsonify({'success': False, 'error': str(exc)}), 500
-
-
-@app.route('/api/labels', methods=['GET'])
-def get_labels() -> object:
-    ordered_labels = [label_map[index] for index in sorted(label_map)]
-    return jsonify({'success': True, 'labels': ordered_labels, 'count': len(ordered_labels)})
-
-
-@app.route('/api/model-metrics', methods=['GET'])
-def get_model_metrics() -> object:
-    """Get model evaluation metrics computed from PCA notebook test data"""
-    metrics = _compute_model_metrics()
-    return jsonify(metrics)
-
-
-@app.route('/api/health', methods=['GET'])
-def health() -> object:
-    return jsonify(
-        {
-            'success': True,
-            'status': 'running',
-            'models_loaded': True,
-            'labels_count': len(label_map),
-        }
-    )
-
-@app.route('/api/detect', methods=['POST'])
-def detect_faces():
-    """Detect faces in an uploaded image using Haar cascade."""
-    image = _load_image_from_request()
-    if image is None:
-        return jsonify({'success': False, 'error': 'No image provided'}), 400
-
-    try:
-        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-        # Load the pre-trained Haar cascade classifier
-        cascade_path = cv2.data.haarcascades + 'haarcascade_frontalface_default.xml'
-        face_cascade = cv2.CascadeClassifier(cascade_path)
-
-        faces = face_cascade.detectMultiScale(
-            gray,
-            scaleFactor=1.1,
-            minNeighbors=5,
-            minSize=(30, 30)
-        )
-
-        # Draw rectangles on a copy of the original image
-        result_img = image.copy()
-        for (x, y, w, h) in faces:
-            cv2.rectangle(result_img, (x, y), (x + w, y + h), (255, 0, 0), 5)
-
-        # Encode result image to base64
-        _, buffer = cv2.imencode('.jpg', result_img)
-        result_b64 = base64.b64encode(buffer).decode('utf-8')
-        result_src = f'data:image/jpeg;base64,{result_b64}'
-
-        # Prepare bounding box list
-        face_list = []
-        for i, (x, y, w, h) in enumerate(faces):
-            face_list.append({
-                'id': i + 1,
-                'x': int(x),
-                'y': int(y),
-                'width': int(w),
-                'height': int(h)
-            })
-
         return jsonify({
             'success': True,
-            'face_count': len(faces),
-            'faces': face_list,
-            'result_image': result_src,
-            'mode': 'grayscale' if len(image.shape) == 2 else 'color'
+            'person': person_name,
+            'confidence': round(confidence, 2),
+            'distance': round(distance, 4),
+            'inference_time_ms': round(inference_time_ms, 2),
         })
-
     except Exception as exc:
         return jsonify({'success': False, 'error': str(exc)}), 500
-
-
 
 @app.route('/api/detect-recognize', methods=['POST'])
 def detect_and_recognize():
-    """Detect faces and recognize each one using PCA/KNN."""
+    """
+    Detect all faces in the image, recognize each, draw bounding boxes + names,
+    and return annotated image + per‑face results.
+    """
     image = _load_image_from_request()
     if image is None:
         return jsonify({'success': False, 'error': 'No image provided'}), 400
 
     try:
-        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-        cascade_path = cv2.data.haarcascades + 'haarcascade_frontalface_default.xml'
-        face_cascade = cv2.CascadeClassifier(cascade_path)
-
-        faces = face_cascade.detectMultiScale(
-            gray,
-            scaleFactor=1.1,
-            minNeighbors=5,
-            minSize=(30, 30)
-        )
+        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY) if len(image.shape) == 3 else image
+        faces = face_cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=5, minSize=(30, 30))
 
         result_img = image.copy()
         face_results = []
 
         for (x, y, w, h) in faces:
-            # Extract face region from grayscale image
             face_roi = gray[y:y+h, x:x+w]
             person_name, confidence, distance, recognized = _recognize_face_region(face_roi)
 
-            # Draw bounding box and label
-            color = (255, 0, 0)
+            color = (65, 84, 241)
             cv2.rectangle(result_img, (x, y), (x + w, y + h), color, 2)
             label = f"{person_name} ({confidence:.0f}%)" if recognized else "Unknown"
             cv2.putText(result_img, label, (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX,
@@ -345,19 +375,15 @@ def detect_and_recognize():
 
             face_results.append({
                 'id': len(face_results) + 1,
-                'x': int(x),
-                'y': int(y),
-                'width': int(w),
-                'height': int(h),
+                'x': int(x), 'y': int(y), 'width': int(w), 'height': int(h),
                 'person': person_name if recognized else 'Unknown',
                 'confidence': round(confidence, 2),
                 'distance': round(distance, 4),
                 'recognized': recognized
             })
 
-        # Encode result image to base64
         _, buffer = cv2.imencode('.jpg', result_img)
-        result_b64 = base64.b64encode(buffer).decode('utf-8')
+        result_b64 = b64encode(buffer).decode('utf-8')
         result_src = f'data:image/jpeg;base64,{result_b64}'
 
         return jsonify({
@@ -365,67 +391,16 @@ def detect_and_recognize():
             'face_count': len(faces),
             'faces': face_results,
             'result_image': result_src,
-            'mode': 'grayscale' if len(image.shape) == 2 else 'color'
+            'mode': 'color' if len(image.shape) == 3 else 'grayscale'
         })
 
     except Exception as exc:
         return jsonify({'success': False, 'error': str(exc)}), 500
 
 
-def _preprocess_face_region(face_roi_gray: np.ndarray) -> np.ndarray:
-    """
-    Pad a possibly non-square face region to match the exact image_size while
-    preserving the aspect ratio - just like the training faces were prepared.
-    
-    Returns a normalized, flattened feature vector.
-    """
-    h, w = face_roi_gray.shape
-    target_w, target_h = image_size  # from config (e.g., 92, 112)
-
-    # --- Scale the face to fit inside the target size, keeping aspect ratio ---
-    scale = min(target_w / w, target_h / h)
-    new_w = int(w * scale)
-    new_h = int(h * scale)
-    resized = cv2.resize(face_roi_gray, (new_w, new_h))
-
-    # --- Create a black canvas of exactly target size, place face in the centre ---
-    canvas = np.zeros((target_h, target_w), dtype=np.float32)
-    x_offset = (target_w - new_w) // 2
-    y_offset = (target_h - new_h) // 2
-    canvas[y_offset:y_offset+new_h, x_offset:x_offset+new_w] = resized
-
-    # Normalise to [0,1] and flatten
-    canvas = canvas / 255.0
-    return canvas.flatten().reshape(1, -1)
-
-
-def _recognize_face_region(face_roi_gray: np.ndarray) -> tuple[str, float, float, bool]:
-    """
-    Recognize a detected face ROI using the PCA+KNN model.
-    Returns (person_name, confidence, distance, is_known).
-    """
-    feature_vector = _preprocess_face_region(face_roi_gray)
-
-    # PCA projection
-    pca_features = pca_model.transform(feature_vector)
-
-    # Predict label
-    predicted_label = int(knn_model.predict(pca_features)[0])
-    person_name = label_map.get(predicted_label, f'unknown_{predicted_label}')
-
-    # Distance and confidence
-    distances, _ = knn_model.kneighbors(pca_features, n_neighbors=1)
-    distance = float(distances[0][0])
-    confidence = _confidence_from_features(pca_features, predicted_label, distance)
-
-    # Threshold – adjust this value based on your dataset
-    THRESHOLD = 50.0  # lower if too many known faces become Unknown
-    recognized = confidence > THRESHOLD
-
-    return person_name, confidence, distance, recognized
-# ------------------------------------------------------------------ #
-#  Segmentation API helpers                                           #
-# ------------------------------------------------------------------ #
+# ═══════════════════════════════════════════════════════════════════════
+#  Routes – Segmentation (unchanged from original)
+# ═══════════════════════════════════════════════════════════════════════
 
 def _load_seg_image() -> np.ndarray | None:
     """Load BGR image from multipart upload or base64 JSON/form payload."""
@@ -450,10 +425,8 @@ def _load_seg_image() -> np.ndarray | None:
     buf = np.frombuffer(file_bytes, np.uint8)
     return cv2.imdecode(buf, cv2.IMREAD_COLOR)
 
-
 @app.route('/api/segment/kmeans', methods=['POST'])
 def segment_kmeans():
-    """K-Means segmentation on the L channel of LUV color space."""
     image = _load_seg_image()
     if image is None:
         return jsonify({'success': False, 'error': 'No image provided'}), 400
@@ -471,21 +444,17 @@ def segment_kmeans():
     except Exception as exc:
         return jsonify({'success': False, 'error': str(exc)}), 500
 
-
 @app.route('/api/segment/region-growing', methods=['POST'])
 def segment_region_growing():
-    """Region Growing segmentation from one or more user-supplied seed points."""
     image = _load_seg_image()
     if image is None:
         return jsonify({'success': False, 'error': 'No image provided'}), 400
     try:
         payload = request.get_json(silent=True) or {}
-        # Accept seeds as a JSON array: [[x1,y1],[x2,y2],...]
         seeds_raw = request.form.get('seeds') or payload.get('seeds')
         if seeds_raw:
             seeds = json.loads(seeds_raw) if isinstance(seeds_raw, str) else seeds_raw
         else:
-            # Fallback: single seed from legacy x/y fields
             sx = int(request.form.get('seed_x') or payload.get('seed_x', image.shape[1] // 2))
             sy = int(request.form.get('seed_y') or payload.get('seed_y', image.shape[0] // 2))
             seeds = [[sx, sy]]
@@ -504,10 +473,8 @@ def segment_region_growing():
     except Exception as exc:
         return jsonify({'success': False, 'error': str(exc)}), 500
 
-
 @app.route('/api/segment/agglomerative', methods=['POST'])
 def segment_agglomerative():
-    """Agglomerative Clustering segmentation (operates on a 20×20 downscale internally)."""
     image = _load_seg_image()
     if image is None:
         return jsonify({'success': False, 'error': 'No image provided'}), 400
@@ -525,104 +492,8 @@ def segment_agglomerative():
     except Exception as exc:
         return jsonify({'success': False, 'error': str(exc)}), 500
 
-# ──────────────────────────────────────────────────────────────
-#  Thresholding APIs
-# ──────────────────────────────────────────────────────────────
-
-def _apply_thresholding(image_array, method, scope, **kwargs):
-    """
-    Apply thresholding to an image and return the result with metadata.
-    
-    Args:
-        image_array: Input image as numpy array (color or grayscale)
-        method: 'optimal', 'otsu', or 'spectral'
-        scope: 'global' or 'local'
-        **kwargs: Additional parameters (window_size, classes, sigma, etc.)
-    
-    Returns:
-        Tuple of (binary_image, threshold_value_or_label, metadata_dict)
-    """
-    # Convert to grayscale if needed
-    if len(image_array.shape) == 3:
-        gray = cv2.cvtColor(image_array, cv2.COLOR_BGR2GRAY)
-    else:
-        gray = image_array
-    
-    metadata = {'scope': scope}
-    
-    if method == 'optimal':
-        optimal = OptimalThresholding(scope)
-        block_size = int(kwargs.get('window_size', 15)) if scope == 'local' else None
-        result = optimal.apply_thresholding(gray, block_size=block_size)
-        threshold = optimal.compute_optimal_threshold(gray)
-        metadata['threshold'] = round(float(threshold), 2)
-    
-    elif method == 'otsu':
-        otsu = OtsuThresholding(scope)
-        block_size = int(kwargs.get('window_size', 15)) if scope == 'local' else None
-        if scope == 'global':
-            result = otsu.apply_global_threshold(gray)
-            threshold = otsu.compute_best_threshold(gray)
-            metadata['threshold'] = int(threshold)
-        else:
-            result = otsu.apply_local_threshold(gray, block_size=block_size)
-            metadata['threshold'] = f"local({block_size}x{block_size})"
-    
-    elif method == 'spectral':
-        spectral = SpectralThresholding()
-        num_classes = int(kwargs.get('classes', 3))
-        sigma = float(kwargs.get('sigma', 1.0))
-        window_size = int(kwargs.get('window_size', 15)) if scope == 'local' else None
-        
-        if scope == 'global':
-            result = spectral.global_otsu_multithreshold(gray, num_classes=num_classes, smoothing_sigma=sigma)
-        else:
-            result = spectral.local_otsu_multithreshold(gray, num_classes=num_classes, window_size=window_size, smoothing_sigma=sigma)
-        
-        metadata['classes'] = num_classes
-        metadata['sigma'] = sigma
-        if scope == 'local':
-            metadata['window_size'] = window_size
-        
-        # Convert result to uint8 for proper encoding
-        result = (result * 255 / np.max(result)).astype(np.uint8) if np.max(result) > 1 else result.astype(np.uint8)
-    
-    return result, metadata
-
-
-@app.route('/api/threshold/optimal', methods=['POST'])
-def threshold_optimal():
-    """Apply optimal thresholding to an uploaded image."""
-    image = _load_image_from_request()
-    if image is None:
-        return jsonify({'success': False, 'error': 'No image provided'}), 400
-    
-    try:
-        start_time = time.perf_counter()
-        
-        scope = request.form.get('scope', 'global')
-        window_size = request.form.get('window_size', 15)
-        
-        result, metadata = _apply_thresholding(image, 'optimal', scope, window_size=window_size)
-        
-        # Encode result image to base64
-        _, buffer = cv2.imencode('.png', result)
-        result_b64 = base64.b64encode(buffer).decode('utf-8')
-        
-        elapsed_ms = (time.perf_counter() - start_time) * 1000
-        metadata['result_image'] = f'data:image/png;base64,{result_b64}'
-        metadata['elapsed_ms'] = round(elapsed_ms, 2)
-        metadata['success'] = True
-        
-        return jsonify(metadata)
-    
-    except Exception as exc:
-        return jsonify({'success': False, 'error': str(exc)}), 500
-
-
 @app.route('/api/segment/meanshift', methods=['POST'])
 def segment_meanshift():
-    """Mean Shift segmentation on the L channel of LUV color space."""
     image = _load_seg_image()
     if image is None:
         return jsonify({'success': False, 'error': 'No image provided'}), 400
@@ -639,79 +510,130 @@ def segment_meanshift():
         })
     except Exception as exc:
         return jsonify({'success': False, 'error': str(exc)}), 500
-@app.route('/api/threshold/otsu', methods=['POST'])
-def threshold_otsu():
-    """Apply Otsu thresholding to an uploaded image."""
+
+
+# ═══════════════════════════════════════════════════════════════════════
+#  Routes – Thresholding (unchanged from original)
+# ═══════════════════════════════════════════════════════════════════════
+
+def _apply_thresholding(image_array, method, scope, **kwargs):
+    """Apply thresholding and return (binary_image, metadata)."""
+    if len(image_array.shape) == 3:
+        gray = cv2.cvtColor(image_array, cv2.COLOR_BGR2GRAY)
+    else:
+        gray = image_array
+
+    metadata = {'scope': scope}
+
+    if method == 'optimal':
+        optimal = OptimalThresholding(scope)
+        block_size = int(kwargs.get('window_size', 15)) if scope == 'local' else None
+        result = optimal.apply_thresholding(gray, block_size=block_size)
+        threshold = optimal.compute_optimal_threshold(gray)
+        metadata['threshold'] = round(float(threshold), 2)
+
+    elif method == 'otsu':
+        otsu = OtsuThresholding(scope)
+        block_size = int(kwargs.get('window_size', 15)) if scope == 'local' else None
+        if scope == 'global':
+            result = otsu.apply_global_threshold(gray)
+            threshold = otsu.compute_best_threshold(gray)
+            metadata['threshold'] = int(threshold)
+        else:
+            result = otsu.apply_local_threshold(gray, block_size=block_size)
+            metadata['threshold'] = f"local({block_size}x{block_size})"
+
+    elif method == 'spectral':
+        spectral = SpectralThresholding()
+        num_classes = int(kwargs.get('classes', 3))
+        sigma = float(kwargs.get('sigma', 1.0))
+        window_size = int(kwargs.get('window_size', 15)) if scope == 'local' else None
+
+        if scope == 'global':
+            result = spectral.global_otsu_multithreshold(gray, num_classes=num_classes, smoothing_sigma=sigma)
+        else:
+            result = spectral.local_otsu_multithreshold(gray, num_classes=num_classes,
+                                                        window_size=window_size, smoothing_sigma=sigma)
+
+        metadata['classes'] = num_classes
+        metadata['sigma'] = sigma
+        if scope == 'local':
+            metadata['window_size'] = window_size
+
+        # Normalize and convert to uint8 for proper encoding
+        result = (result * 255 / np.max(result)).astype(np.uint8) if np.max(result) > 1 else result.astype(np.uint8)
+
+    return result, metadata
+
+@app.route('/api/threshold/optimal', methods=['POST'])
+def threshold_optimal():
     image = _load_image_from_request()
     if image is None:
         return jsonify({'success': False, 'error': 'No image provided'}), 400
-    
     try:
         start_time = time.perf_counter()
-        
         scope = request.form.get('scope', 'global')
         window_size = request.form.get('window_size', 15)
-        
-        result, metadata = _apply_thresholding(image, 'otsu', scope, window_size=window_size)
-        
-        # Encode result image to base64
+        result, metadata = _apply_thresholding(image, 'optimal', scope, window_size=window_size)
         _, buffer = cv2.imencode('.png', result)
-        result_b64 = base64.b64encode(buffer).decode('utf-8')
-        
-        elapsed_ms = (time.perf_counter() - start_time) * 1000
+        result_b64 = b64encode(buffer).decode('utf-8')
         metadata['result_image'] = f'data:image/png;base64,{result_b64}'
-        metadata['elapsed_ms'] = round(elapsed_ms, 2)
+        metadata['elapsed_ms'] = round((time.perf_counter() - start_time) * 1000, 2)
         metadata['success'] = True
-        
         return jsonify(metadata)
-    
     except Exception as exc:
         return jsonify({'success': False, 'error': str(exc)}), 500
 
+@app.route('/api/threshold/otsu', methods=['POST'])
+def threshold_otsu():
+    image = _load_image_from_request()
+    if image is None:
+        return jsonify({'success': False, 'error': 'No image provided'}), 400
+    try:
+        start_time = time.perf_counter()
+        scope = request.form.get('scope', 'global')
+        window_size = request.form.get('window_size', 15)
+        result, metadata = _apply_thresholding(image, 'otsu', scope, window_size=window_size)
+        _, buffer = cv2.imencode('.png', result)
+        result_b64 = b64encode(buffer).decode('utf-8')
+        metadata['result_image'] = f'data:image/png;base64,{result_b64}'
+        metadata['elapsed_ms'] = round((time.perf_counter() - start_time) * 1000, 2)
+        metadata['success'] = True
+        return jsonify(metadata)
+    except Exception as exc:
+        return jsonify({'success': False, 'error': str(exc)}), 500
 
 @app.route('/api/threshold/spectral', methods=['POST'])
 def threshold_spectral():
     image = _load_image_from_request()
     if image is None:
         return jsonify({'success': False, 'error': 'No image provided'}), 400
-    
     try:
         start_time = time.perf_counter()
-        
-        # استلام البارامترات من الفرونت آند
         scope = request.form.get('scope', 'global')
         classes = int(request.form.get('classes', 3))
         sigma = float(request.form.get('sigma', 1.0))
         window_size = int(request.form.get('window_size', 15))
-        
-        # تنفيذ الـ Thresholding
-        # تأكد إن الـ Logic جوه الدالة دي في حالة الـ local بيرجع np.mean(window)
+
         result, metadata = _apply_thresholding(
             image, 'spectral', scope,
-            window_size=window_size,
-            classes=classes,
-            sigma=sigma
+            window_size=window_size, classes=classes, sigma=sigma
         )
-        
-        # --- التعديل السحري هنا ---
-        # 1. الـ normalize هيمط الـ Labels والـ Means مع بعض عشان يملوا الـ 255 درجة
-        result_8u = cv2.normalize(result, None, 0, 255, cv2.NORM_MINMAX, cv2.CV_8U)
 
-        # 2. تطبيق الـ JET Colormap على النتيجة الممطوطة
+        # Apply JET colormap for better visualisation
+        result_8u = cv2.normalize(result, None, 0, 255, cv2.NORM_MINMAX, cv2.CV_8U)
         result_colored = cv2.applyColorMap(result_8u, cv2.COLORMAP_JET)
-        
-        # تحويل الصورة لـ Base64 للعرض
+
         _, buffer = cv2.imencode('.png', result_colored)
-        result_b64 = base64.b64encode(buffer).decode('utf-8')
-        
-        elapsed_ms = (time.perf_counter() - start_time) * 1000
+        result_b64 = b64encode(buffer).decode('utf-8')
         metadata['result_image'] = f'data:image/png;base64,{result_b64}'
-        metadata['elapsed_ms'] = round(elapsed_ms, 2)
+        metadata['elapsed_ms'] = round((time.perf_counter() - start_time) * 1000, 2)
         metadata['success'] = True
-        
         return jsonify(metadata)
-    
     except Exception as exc:
         return jsonify({'success': False, 'error': str(exc)}), 500
+
+
+# ═══════════════════════════════════════════════════════════════════════
 if __name__ == '__main__':
     app.run(debug=True, port=5000)

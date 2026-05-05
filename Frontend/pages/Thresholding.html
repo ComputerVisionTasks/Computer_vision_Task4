@@ -16,20 +16,17 @@
 </head>
 <body class="index-page">
 
-  <!-- Header -->
   <header id="header" class="header d-flex align-items-center fixed-top">
     <div class="container-fluid container-xl position-relative d-flex align-items-center">
       <a href="/" class="logo d-flex align-items-center">
-        <img src="../assets/img/Logo-Cv-04.png" alt="EigenVision Suite">
+        <img src="../assets/img/Logo-Cv-04.png" alt="">
       </a>
       <nav id="navmenu" class="navmenu mx-auto">
         <ul>
           <li><a href="/">Home</a></li>
-          <li><a href="/#services">Capabilities</a></li>
-          <li><a href="/#metrics">Model Metrics</a></li>
-          <li><a href="/faceRecognition">Face Recognition</a></li>
+          <li><a href="/faceRecognition" >Face Recognition</a></li>
           <li><a href="/segmentation">Segmentation</a></li>
-          <li><a href="/thresholding" class="active">Thresholding</a></li>
+            <li><a href="/thresholding" class="active">Thresholding</a></li>
         </ul>
         <i class="mobile-nav-toggle d-xl-none bi bi-list"></i>
       </nav>
@@ -39,23 +36,7 @@
 
   <main class="main seg-page">
 
-    <!-- ── Compact page header ─────────────────────────── -->
-    <div class="seg-page-header">
-      <div class="container">
-        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
-          <div>
-            <h1 class="seg-title"><i class="bi bi-slash-circle"></i> Thresholding</h1>
-            <p class="seg-subtitle">Upload an image · choose a method · run</p>
-          </div>
-          <!-- Method tabs inline in header -->
-          <div class="seg-method-tabs">
-            <button class="seg-tab-btn active" data-method="optimal"><i class="bi bi-bullseye"></i> Optimal</button>
-            <button class="seg-tab-btn" data-method="otsu"><i class="bi bi-bar-chart-steps"></i> Otsu</button>
-            <button class="seg-tab-btn" data-method="spectral"><i class="bi bi-activity"></i> Spectral</button>
-          </div>
-        </div>
-      </div>
-    </div>
+ 
 
     <!-- ── Main workspace ──────────────────────────────── -->
     <div class="container seg-workspace">
@@ -168,6 +149,13 @@
               </div>
 
             </div>
+          </div>
+
+          <!-- Method tabs below controls card -->
+          <div class="seg-method-tabs" style="display:flex;flex-wrap:wrap;gap:0.5rem;margin-top:1rem;">
+            <button class="seg-tab-btn active" data-method="optimal" style="flex:1;min-width:100px;"><i class="bi bi-bullseye"></i> Optimal</button>
+            <button class="seg-tab-btn" data-method="otsu" style="flex:1;min-width:100px;"><i class="bi bi-bar-chart-steps"></i> Otsu</button>
+            <button class="seg-tab-btn" data-method="spectral" style="flex:1;min-width:100px;"><i class="bi bi-activity"></i> Spectral</button>
           </div>
         </div>
 
