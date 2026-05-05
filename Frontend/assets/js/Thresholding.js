@@ -232,7 +232,7 @@ function buildInfoRow(data) {
   if (data.scope       !== undefined) pills.push({ icon: 'bi-globe2',           label: data.scope });
   if (data.threshold   !== undefined) pills.push({ icon: 'bi-sliders',          label: `threshold = ${data.threshold}` });
   if (data.classes     !== undefined) pills.push({ icon: 'bi-grid-3x3-gap',     label: `classes = ${data.classes}` });
-  if (data.sigma       !== undefined) pills.push({ icon: 'bi-activity',         label: `σ = ${data.sigma}` });
+  // if (data.sigma       !== undefined) pills.push({ icon: 'bi-activity',         label: `σ = ${data.sigma}` });
   if (data.window_size !== undefined) pills.push({ icon: 'bi-square',           label: `window = ${data.window_size}` });
   pills.forEach(p => {
     infoRow.innerHTML += `<span class="seg-info-pill"><i class="bi ${p.icon}"></i> ${p.label}</span>`;
